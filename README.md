@@ -25,41 +25,144 @@ PEERFUSE/
 ├── index.html              # Main application page
 ├── ai-tools.html          # AI-powered study tools page
 ├── style.css              # Global styles and theming
+├── backend/               # Flask API server (secure)
+│   ├── app.py            # Main Flask application
+│   ├── requirements.txt  # Python dependencies
+│   ├── .env.example      # Environment variables template
+│   └── README.md         # Backend documentation
 ├── js/
-│   ├── config.js          # Firebase and API configuration
+│   ├── config.js          # Firebase configuration
 │   ├── auth.js            # Authentication logic
 │   ├── matching.js        # Matching algorithm
 │   ├── ui.js              # UI helpers and rendering
 │   ├── firebase-helpers.js # Firebase CRUD operations
-│   └── ai-tools.js        # Gemini AI integration
+│   ├── app.js             # Main application logic
+│   └── ai-tools.js        # AI integration (frontend)
 └── README.md              # This file
 ```
 
 ## How to Run Locally
 
-1. **Clone the repository**
+### 1. Clone the Repository
+```bash
+git clone https://github.com/NOTtaLEMON/PEERFUSE.git
+cd PEERFUSE
+```
+
+### 2. Set Up the Backend (Flask + Gemini AI)
+
+**Install Python dependencies:**
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+**Configure the Gemini API key:**
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env and add your actual API key
+# Get your key from: https://aistudio.google.com/app/apikey
+```
+
+Your `.env` file should contain:
+```env
+GOOGLE_API_KEY=your_actual_gemini_api_key_here
+```
+
+**Start the backend server:**
+```bash
+python app.py
+```
+
+The backend will start on `http://localhost:5000`
+
+📖 **See [backend/README.md](backend/README.md) for detailed backend setup and API documentation**
+
+### 3. Configure Firebase
+
+- Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+- Enable Email/Password authentication
+- Create a Realtime Database
+- Copy your Firebase config to `js/config.js`:
+
+```javascript
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-app.firebaseapp.com",
+  databaseURL: "https://your-app.firebaseio.com",
+  projectId: "your-project-id",
+  storageBucket: "your-app.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
+```
+
+### 4. Run the Frontend
+
+**Option A - Direct file access:**
+```bash
+# Simply open index.html in your browser
+```
+
+**Option B - Local server (recommended):**
+```bash
+# Using Python
+python -m http.server 8000
+
+# Or using Node.js
+npx http-server -p 8000
+```
+
+Then visit `http://localhost:8000`
+
+### 5. Test the Application
+
+1. **Backend health check**: Visit `http://localhost:5000/health`
+2. **Create an account** on the frontend
+3. **Set up your profile** with strengths/weaknesses
+4. **Try AI tools** to generate study materials
+5. **Find a match** with complementary skills
+
+## 🔐 Security & Best Practices
+
+### ✅ What We Do Right
+
+- **Environment Variables**: API keys stored in `.env` (not in code)
+- **Git Security**: `.env` is in `.gitignore` and never committed
+- **Backend Proxy**: Gemini API calls go through Flask backend (keys never exposed to frontend)
+- **Error Handling**: Comprehensive error logging with tracebacks
+- **CORS Protection**: Configured for secure frontend-backend communication
+
+### ⚠️ Important Security Notes
+
+**Never commit these files:**
+- `.env` (contains API keys)
+- `firebase-config.private.js` (if you create one)
+- Any file with "secret", "key", or "private" in the name
+
+**For production deployment:**
+- Set `debug=False` in Flask
+- Use environment variables on your hosting platform
+- Implement Firebase Security Rules
+- Enable rate limiting on API endpoints
+- Use HTTPS for all communications
+
+### 🔧 If You Accidentally Expose an API Key
+
+1. **Immediately revoke the key**:
+   - [Google AI Studio](https://aistudio.google.com/app/apikey) for Gemini
+   - Firebase Console for Firebase keys
+
+2. **Remove from Git history**:
    ```bash
-   git clone https://github.com/NOTtaLEMON/PEERFUSE.git
-   cd PEERFUSE
+   git rm --cached path/to/file
+   git commit -m "Remove exposed API key"
+   git push --force
    ```
 
-2. **Configure Firebase**
-   - Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-   - Enable Email/Password authentication
-   - Create a Realtime Database
-   - Copy your config to `js/config.js`
-
-3. **Configure Gemini AI (Optional)**
-   - Get an API key from [ai.google.dev](https://ai.google.dev)
-   - Add to `js/config.js`
-
-4. **Open in browser**
-   ```bash
-   # Simply open index.html in your browser
-   # Or use a local server:
-   python -m http.server 8000
-   # Then visit http://localhost:8000
-   ```
+3. **Generate a new key** and add it to `.env` (locally only)
 
 ## Security Notes
 

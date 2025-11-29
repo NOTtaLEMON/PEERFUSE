@@ -541,14 +541,14 @@ function startSession(peerName) {
   const sessionInfo = document.getElementById('session-info');
   if (!sessionInfo) return;
 
-  // Generate a random Google Meet-style link
-  const meetCode = Math.random().toString(36).substring(2, 12);
-  const meetLink = `https://meet.google.com/${meetCode}`;
+  // Generate unique Jitsi Meet room
+  const roomId = `peerfuse-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const meetLink = `https://meet.jit.si/${roomId}`;
 
   sessionInfo.innerHTML = `
     <p><strong>Session Partner:</strong> ${window.UI.escapeHtml(peerName)}</p>
     <p><strong>Status:</strong> <span style="color: var(--success);">● Active</span></p>
-    <p><strong>Google Meet Link:</strong></p>
+    <p><strong>Video Meeting Link:</strong></p>
     <div style="background: white; padding: 12px; border-radius: 8px; margin: 8px 0;">
       <a href="${meetLink}" target="_blank" style="color: var(--primary); font-weight: 600;">${meetLink}</a>
     </div>
@@ -1387,9 +1387,10 @@ async function handleAcceptMatch() {
       return;
     }
 
-    // Generate a unique Google Meet link (using a simple UUID-based room ID)
-    const meetingRoomId = generateMeetingId();
-    const meetLink = `https://meet.google.com/${meetingRoomId}`;
+    // Generate unique Jitsi Meet room
+    // Jitsi creates real meeting rooms automatically - no API needed
+    const roomId = `peerfuse-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const meetLink = `https://meet.jit.si/${roomId}`;
     
     // Create session data
     const sessionData = {
@@ -1465,12 +1466,12 @@ async function handleStartMeeting() {
     // Update session to show meeting started
     await sessionRef.update({ meetingStarted: true });
     
-    // Show the meeting link
+    // Show instructions for creating the meeting
     const linkContainer = document.getElementById('meeting-link-container');
     const linkElement = document.getElementById('meeting-link');
     
     linkElement.href = session.meetLink;
-    linkElement.textContent = session.meetLink;
+    linkElement.textContent = 'Join Video Meeting';
     
     window.UI.show('meeting-link-container');
     
@@ -1478,14 +1479,15 @@ async function handleStartMeeting() {
     const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
     await firebase.database().ref(`notifications/${partnerKey}`).set({
       type: 'meeting-ready',
-      message: 'Your study partner has started the meeting!',
+      message: 'Your study partner is starting the meeting! Click your meeting button to join.',
       meetLink: session.meetLink,
       timestamp: Date.now()
     });
     
-    window.UI.showToast('Meeting link generated! Opening in new tab...', 'success');
+    window.UI.showToast('Opening Jitsi Meet... Your partner has the same link!', 'info');
     
-    // Open the meeting in a new tab
+    // Open Jitsi Meet in a new tab
+    // Both users get the same valid meeting link automatically
     setTimeout(() => {
       window.open(session.meetLink, '_blank');
     }, 1000);
@@ -1497,16 +1499,11 @@ async function handleStartMeeting() {
 }
 
 /**
- * Generate a random meeting ID for Google Meet
+ * Note: We use Jitsi Meet (https://meet.jit.si/) which is a free, open-source video conferencing service.
+ * Jitsi creates real meeting rooms automatically when you visit a URL with a room name.
+ * Both users get the exact same valid meeting link - no API key or authentication needed.
+ * The room persists as long as at least one user is in it.
  */
-function generateMeetingId() {
-  // Google Meet uses format like: abc-defg-hij
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  const part1 = Array.from({length: 3}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part2 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part3 = Array.from({length: 3}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `${part1}-${part2}-${part3}`;
-}
 
 /**
  * Listen for meeting start from partner

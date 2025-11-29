@@ -7,20 +7,24 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
 import os
+import traceback
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend requests
 
-# Configure Gemini AI
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
+# Configure Gemini AI with API key from environment
+API_KEY = os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY')
+if not API_KEY:
+    raise ValueError(
+        "API key not found! Please set GOOGLE_API_KEY in your .env file.\n"
+        "See backend/.env.example for setup instructions."
+    )
 
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key=API_KEY)
 
 # Use the latest Gemini 2.5 Flash model
 model = genai.GenerativeModel('models/gemini-2.5-flash')
@@ -76,6 +80,8 @@ def list_models():
         model_names = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
         return jsonify({"models": model_names})
     except Exception as e:
+        print(f"❌ Error listing models: {str(e)}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route('/generate-notes', methods=['POST'])
@@ -104,8 +110,12 @@ def generate_content():
         })
         
     except Exception as e:
-        print(f"Error generating content: {str(e)}")
-        return jsonify({'error': f'Failed to generate content: {str(e)}'}), 500
+        print(f"❌ Error generating {endpoint}: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Failed to generate content: {str(e)}',
+            'type': endpoint
+        }), 500
 
 
 @app.route('/generate-match-explanation', methods=['POST'])
@@ -167,8 +177,11 @@ Keep it concise and motivating!"""
         })
         
     except Exception as e:
-        print(f"Error generating match explanation: {str(e)}")
-        return jsonify({'error': f'Failed to generate explanation: {str(e)}'}), 500
+        print(f"❌ Error generating match explanation: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Failed to generate explanation: {str(e)}'
+        }), 500
 
 
 @app.route('/generate-presession-quiz', methods=['POST'])
@@ -232,13 +245,22 @@ Make questions specific, practical, and relevant to each topic. Ensure variety i
         })
         
     except Exception as e:
-        print(f"Error generating pre-session quiz: {str(e)}")
-        return jsonify({'error': f'Failed to generate quiz: {str(e)}'}), 500
+        print(f"❌ Error generating pre-session quiz: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Failed to generate quiz: {str(e)}'
+        }), 500
 
 
 if __name__ == '__main__':
-    print("🚀 Starting PeerFuse Backend Server...")
-    print("✅ Gemini API key configured")
+    print("="*50)
+    print("🚀 PeerFuse Backend Server")
+    print("="*50)
+    print("✅ Gemini API configured")
+    print("✅ Model: gemini-2.5-flash")
+    print("🌐 Server: http://127.0.0.1:5000")
+    print("📝 Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz")
+    print("="*50)
     app.run(debug=True, host='127.0.0.1', port=5000)
 
 

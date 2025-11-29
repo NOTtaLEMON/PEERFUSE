@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PeerFuse - Connect with compatible study partners based on complementary learning strengths and weaknesses" />
+  <title>PeerFuse | Complementary Peer Matching</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤝</text></svg>">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="hero">
+    <h1>🤝 PeerFuse</h1>
+    <p>Match with peers who complement your learning strengths and weaknesses</p>
+    <div class="user-bar" id="user-bar">
+      <span id="user-welcome">Not signed in</span>
+      <button id="notifications-btn" class="hidden" style="position: relative; margin-right: 12px;">
+        🔔
+        <span id="notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--error); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">1</span>
+      </button>
+      <button id="logout-btn" class="hidden">Logout</button>
+    </div>
+    
+    <!-- Navigation Bar -->
+    <nav class="nav-bar hidden" id="nav-bar">
+      <button onclick="showSection('profile-section')" class="nav-btn hidden" id="create-profile-btn">📋 Create Profile</button>
+      <button onclick="showSection('profile-section')" class="nav-btn hidden" id="edit-profile-btn">📋 Edit Profile</button>
+      <button onclick="showSection('matching-section')" class="nav-btn">🔍 Find Match</button>
+      <button onclick="showSection('quiz-builder-section')" class="nav-btn">📝 Quiz Builder</button>
+      <button onclick="showSection('flashcard-section')" class="nav-btn">🗂️ Flashcards</button>
+      <button onclick="window.location.href='ai-tools.html'" class="nav-btn">🤖 AI Tools</button>
+    </nav>
+  </header>
+
+  <!-- Notification Panel -->
+  <div id="notification-panel" class="notification-panel hidden">
+    <div class="notification-header">
+      <h3>Notifications</h3>
+      <button id="close-notifications-btn" style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+    </div>
+    <div id="notification-list">
+      <p class="text-muted" style="text-align: center; padding: 20px;">No notifications</p>
+    </div>
+  </div>
+
+  <!-- Authentication Screen -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <h2>Welcome to PeerFuse</h2>
+      <p class="text-muted">Sign in or create an account to find your perfect study partner</p>
+      
+      <form id="auth-form" onsubmit="return false;">
+        <div class="auth-field-group">
+          <label for="auth-email">Email Address</label>
+          <input 
+            type="email" 
+            id="auth-email" 
+            placeholder="you@university.edu" 
+            required 
+            autocomplete="email"
+          />
+          
+          <label for="auth-password" class="label-tight">Password</label>
+          <input 
+            type="password" 
+            id="auth-password" 
+            placeholder="Choose a secure password" 
+            required 
+            autocomplete="current-password"
+            minlength="6"
+          />
+
+          <div id="auth-username-row" class="hidden">
+            <label for="auth-username">Display Name</label>
+            <input 
+              type="text" 
+              id="auth-username" 
+              placeholder="e.g., Alex Smith" 
+              minlength="2"
+            />
+          </div>
+        </div>
+
+        <div class="auth-actions">
+          <button type="button" id="signup-btn">Sign Up</button>
+          <button type="button" id="set-username-btn" class="hidden">Complete Signup</button>
+          <button type="button" id="login-btn">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Profile Setup Section -->
+    <section class="card hidden" id="profile-section">
+      <h2>📋 Create Your Learning Profile</h2>
+      <p class="text-muted">Tell us about your academic strengths and areas where you need help</p>
+      
+      <form id="profile-form" onsubmit="return false;">
+        <div class="two-col">
+          <div>
+            <label for="profile-strength1">Strength #1 *</label>
+            <input 
+              type="text" 
+              id="profile-strength1" 
+              placeholder="e.g., Calculus, Programming, Physics" 
+              required 
+            />
+            
+            <label for="profile-strength2">Strength #2</label>
+            <input 
+              type="text" 
+              id="profile-strength2" 
+              placeholder="e.g., Data Structures, Chemistry" 
+            />
+          </div>
+          
+          <div>
+            <label for="profile-weakness1">Weakness #1 *</label>
+            <input 
+              type="text" 
+              id="profile-weakness1" 
+              placeholder="e.g., Statistics, Essay Writing" 
+              required 
+            />
+            
+            <label for="profile-weakness2">Weakness #2</label>
+            <input 
+              type="text" 
+              id="profile-weakness2" 
+              placeholder="e.g., Organic Chemistry, Algorithms" 
+            />
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label for="profile-availability">When are you available? *</label>
+            <select id="profile-availability" required>
+              <option value="">Select your availability</option>
+              <option>6AM-10AM</option>
+              <option>10AM-2PM</option>
+              <option>2PM-6PM</option>
+              <option>6PM-10PM</option>
+              <option>Late night (10PM+)</option>
+            </select>
+
+            <label for="profile-mode">Preferred Communication Mode *</label>
+            <select id="profile-mode" required>
+              <option value="">Select preferred mode</option>
+              <option>Online Meeting (Video)</option>
+              <option>Chat Only</option>
+              <option>In-Person</option>
+              <option>Hybrid</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="profile-goal">Primary Learning Goal *</label>
+            <select id="profile-goal" required>
+              <option value="">Select your goal</option>
+              <option>Clear basics</option>
+              <option>Improve internals</option>
+              <option>Prepare for semester end exams</option>
+              <option>Project collaboration</option>
+              <option>Other</option>
+            </select>
+
+            <label for="profile-frequency">Preferred Meeting Frequency *</label>
+            <select id="profile-frequency" required>
+              <option value="">Select frequency</option>
+              <option>Once a week</option>
+              <option>2-3 times a week</option>
+              <option>Monthly once</option>
+              <option>As needed</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="profile-timezone">Time Zone *</label>
+        <select id="profile-timezone" required>
+          <option value="">Select your timezone</option>
+          <option>UTC-12:00</option>
+          <option>UTC-11:00</option>
+          <option>UTC-10:00</option>
+          <option>UTC-09:00</option>
+          <option>UTC-08:00</option>
+          <option>UTC-07:00</option>
+          <option>UTC-06:00</option>
+          <option>UTC-05:00</option>
+          <option>UTC-04:00</option>
+          <option>UTC-03:00</option>
+          <option>UTC-02:00</option>
+          <option>UTC-01:00</option>
+          <option selected>UTC+00:00</option>
+          <option>UTC+01:00</option>
+          <option>UTC+02:00</option>
+          <option>UTC+03:00</option>
+          <option>UTC+04:00</option>
+          <option>UTC+05:00</option>
+          <option>UTC+05:30</option>
+          <option>UTC+06:00</option>
+          <option>UTC+07:00</option>
+          <option>UTC+08:00</option>
+          <option>UTC+09:00</option>
+          <option>UTC+10:00</option>
+          <option>UTC+11:00</option>
+          <option>UTC+12:00</option>
+        </select>
+
+        <button type="button" id="save-profile-btn" class="mt-2">Save Profile</button>
+        <p class="status hidden" id="profile-status"></p>
+      </form>
+    </section>
+
+    <!-- Pre-Session Quiz -->
+    <section class="card" id="prequiz-section">
+      <h2>📝 Pre-Session Assessment</h2>
+      <p class="text-muted">Take a personalized quiz based on your strengths and weaknesses to establish your baseline knowledge</p>
+      
+      <div id="prequiz-start" class="quiz-start">
+        <p><strong>This assessment will help you and your study partner understand where you are right now.</strong></p>
+        <p>You'll get:</p>
+        <ul>
+          <li>10 questions on your strengths (to test your expertise)</li>
+          <li>10 questions on your weaknesses (to identify areas for improvement)</li>
+          <li>A score to track your progress</li>
+        </ul>
+        <button type="button" id="start-prequiz-btn" class="mt-2">Start Assessment</button>
+      </div>
+
+      <div id="prequiz-quiz" class="hidden">
+        <div id="prequiz-questions"></div>
+        <button type="button" id="submit-prequiz-btn" class="mt-2">Submit Answers</button>
+      </div>
+
+      <div id="prequiz-results" class="hidden">
+        <h3>Your Results</h3>
+        <div id="prequiz-score"></div>
+        <div id="prequiz-breakdown"></div>
+        <button type="button" onclick="location.reload()" class="mt-2">Retake Assessment</button>
+      </div>
+      
+      <p class="status hidden" id="prequiz-status"></p>
+    </section>
+
+    <!-- Matching Section -->
+    <section class="card" id="match-section">
+      <h2>🔍 Find Your Perfect Study Partner</h2>
+      <p class="text-muted">
+        We'll use your profile to find someone whose strengths complement your weaknesses. 
+        You can fine-tune your preferences below.
+      </p>
+
+      <form id="simpleMatchForm" onsubmit="return false;">
+        <p class="text-muted">
+          Using your profile preferences to find the best match. You can adjust additional preferences below:
+        </p>
+
+        <div class="two-col">
+          <div>
+            <label for="partnerPreference">Partner Skill Level</label>
+            <select id="partnerPreference">
+              <option>No Preference</option>
+              <option>Stronger than me</option>
+              <option>Similar level</option>
+              <option>Weaker than me (I can teach)</option>
+            </select>
+
+            <label for="sessionLength">Preferred Session Length</label>
+            <select id="sessionLength">
+              <option>1 hour</option>
+              <option>30 mins</option>
+              <option>2 hours</option>
+              <option>3+ hours</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="studyPersonality">Study Personality</label>
+            <select id="studyPersonality">
+              <option>Flexible</option>
+              <option>Moderate planning</option>
+              <option>Highly structured</option>
+              <option>Very casual</option>
+            </select>
+
+            <label for="matchingPriority">What matters most to you?</label>
+            <select id="matchingPriority">
+              <option>Complementary skills</option>
+              <option>Same availability</option>
+              <option>Same goals</option>
+              <option>Same study style</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="match-form-actions">
+          <button type="button" id="find-match-btn">🔍 Find My Perfect Match</button>
+        </div>
+      </form>
+
+      <div id="result"></div>
+    </section>
+
+    <!-- Session Section -->
+    <section class="card" id="session-section">
+      <h2>💬 Study Session</h2>
+      <p class="text-muted">Connect with your matched peer and start learning together</p>
+      
+      <div id="session-waiting" class="hidden">
+        <div style="text-align: center; padding: 20px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius); margin-bottom: 16px;">
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Match Request Sent!</h3>
+          <p>Waiting for <strong id="match-partner-name">your partner</strong> to accept...</p>
+          <div class="loading-dots" style="margin-top: 12px;">
+            <span style="animation: pulse 1.5s ease-in-out infinite;">●</span>
+            <span style="animation: pulse 1.5s ease-in-out 0.2s infinite;">●</span>
+            <span style="animation: pulse 1.5s ease-in-out 0.4s infinite;">●</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="session-pending" class="hidden">
+        <div style="padding: 20px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius); margin-bottom: 16px;">
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Match Request Received!</h3>
+          <p><strong id="requester-name">Someone</strong> wants to study with you</p>
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button id="accept-match-btn" style="flex: 1; background: var(--success);">✓ Accept</button>
+            <button id="decline-match-btn" style="flex: 1; background: var(--error);">✗ Decline</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="session-ready" class="hidden">
+        <div style="padding: 20px; background: linear-gradient(135deg, var(--success), #059669); color: white; border-radius: var(--radius); margin-bottom: 16px; text-align: center;">
+          <h3 style="margin-bottom: 8px; color: white;">✓ Match Accepted!</h3>
+          <p style="margin-bottom: 16px; color: white;">You're paired with <strong id="session-partner-name">your study buddy</strong></p>
+          <button id="start-meeting-btn" style="background: white; color: var(--success); font-weight: 600; padding: 12px 24px;">
+            📹 Start Google Meet Session
+          </button>
+        </div>
+        <div id="meeting-link-container" class="hidden" style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); text-align: center;">
+          <p style="color: var(--primary-dark); font-weight: 600; margin-bottom: 8px;">Your Google Meet Link:</p>
+          <a id="meeting-link" href="#" target="_blank" style="color: var(--primary); font-size: 16px; word-break: break-all;"></a>
+          <p style="margin-top: 12px; font-size: 14px; color: var(--muted);">Both you and your partner have access to this link. Click to join!</p>
+        </div>
+      </div>
+      
+      <div id="session-info">
+        <p class="text-muted">Find a match first to start a session</p>
+      </div>
+    </section>
+
+    <!-- Post-Session Quiz & Feedback -->
+    <section class="card" id="postquiz-section">
+      <h2>📝 After Session: Generate Study Materials</h2>
+      <p class="text-muted">Enter a topic you covered in the session to generate notes, flashcards, and practice quizzes</p>
+      
+      <div class="mt-2">
+        <label for="session-topic">Topic Covered</label>
+        <input 
+          type="text" 
+          id="session-topic" 
+          placeholder="e.g., Integration, Python Functions, Organic Chemistry"
+        />
+      </div>
+      
+      <div class="match-form-actions mt-2">
+        <button type="button" id="gen-notes-btn">📄 Notes</button>
+        <button type="button" id="gen-flashcards-btn">🗂️ Flashcards</button>
+        <button type="button" id="gen-quiz-btn">❓ Quiz</button>
+      </div>
+      
+      <div id="notes-output" class="mt-3">
+        <p class="text-muted">Generate notes and they will appear here. You can view in full screen or download as PDF.</p>
+      </div>
+      <div id="flashcards-output" class="mt-3">
+        <p class="text-muted">Generate flashcards and they will appear here. You can view in full screen or download as PDF.</p>
+      </div>
+      <div id="quiz-output" class="mt-3">
+        <p class="text-muted">Generate a quiz and it will appear here. You can view in full screen or download as PDF.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal for AI Content -->
+  <div id="ai-content-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">AI Generated Content</h3>
+        <div class="modal-header-actions">
+          <button id="download-pdf-btn" class="icon-btn" title="Download as PDF">📥 PDF</button>
+          <button id="close-modal-btn" class="icon-btn" title="Close">✕</button>
+        </div>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+      
+      <hr class="mt-3">
+      
+      <h3>⭐ Rate Your Study Partner</h3>
+      
+      <form id="postquiz-form">
+        <label for="peer-rating">How helpful was your peer? (1-5)</label>
+        <input 
+          type="number" 
+          id="peer-rating" 
+          min="1" 
+          max="5" 
+          placeholder="5" 
+          required 
+        />
+
+        <label for="peer-feedback">Feedback Comments</label>
+        <textarea 
+          id="peer-feedback" 
+          placeholder="What did you like? What could improve?" 
+          required
+        ></textarea>
+
+        <button type="submit" class="mt-2">Submit Feedback</button>
+        <p class="status hidden" id="postquiz-status"></p>
+      </form>
+    </section>
+
+    <!-- AI Tools Section -->
+    <section class="card" id="ai-section">
+      <h2>🤖 AI-Powered Learning Tools</h2>
+      <p class="text-muted">Generate personalized study materials using Google Gemini AI</p>
+      
+      <button onclick="window.location.href='ai-tools.html'">
+        Open AI Learning Tools →
+      </button>
+      
+      <p class="footer-note mt-2">
+        Generate notes, flashcards, quizzes, and get AI-powered match explanations
+      </p>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>
+      <strong>PeerFuse</strong> • Built with HTML, CSS, JavaScript, Firebase & Gemini AI<br>
+      Designed for quantitative + qualitative analysis of peer learning
+    </p>
+  </footer>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- PeerFuse JavaScript Modules (load in order) -->
+  <script src="js/config.js"></script>
+  <script src="js/firebase-helpers.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/matching.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/ai-tools.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

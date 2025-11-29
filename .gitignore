@@ -1,0 +1,72 @@
+# PeerFuse .gitignore
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+config.local.js
+secrets.js
+
+# API Keys (if you create separate key files)
+**/api-keys.js
+**/keys.js
+firebase-config.private.js
+gemini-config.private.js
+
+# Node modules (if you add build tools later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build outputs (if you add a build process)
+dist/
+build/
+out/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Firebase cache
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Keep the template config but ignore the actual keys
+# js/config.js with real keys should be gitignored
+# Instead, use js/config.template.js for sharing
+
+# User-uploaded content (if you add file uploads later)
+uploads/
+user-content/

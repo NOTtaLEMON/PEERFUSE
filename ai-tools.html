@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PeerFuse AI Tools - Generate study materials with Google Gemini AI" />
+  <title>PeerFuse | AI Learning Tools</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+  
+  <!-- Gemini AI SDK -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="hero">
+    <h1>🤖 PeerFuse AI Tools</h1>
+    <p>Generate personalized study materials powered by Google Gemini AI</p>
+    <div class="user-bar" id="user-bar">
+      <span id="user-welcome">Not signed in</span>
+      <button id="logout-btn" class="hidden">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="ai-tools-container">
+    <button class="back-btn" onclick="goBackToMain()">← Back to Main</button>
+
+    <!-- Before Session: Match Explanation -->
+    <div class="tool-section">
+      <h3>📚 Before Session: Match Explanation</h3>
+      <p class="text-muted">
+        See why you and your peer are a great match based on complementary strengths and weaknesses
+      </p>
+      <button id="gen-match-explanation-btn">Generate Match Explanation</button>
+      <div id="match-explanation" class="ai-box">
+        Click the button above to generate an AI-powered explanation
+      </div>
+    </div>
+
+    <!-- After Session: Study Materials -->
+    <div class="tool-section">
+      <h3>✏️ After Session: Generate Study Materials</h3>
+      <p class="text-muted">
+        Enter a topic you covered in the session to generate notes, flashcards, and practice quizzes
+      </p>
+      
+      <div class="ai-input-group">
+        <input 
+          type="text" 
+          id="session-topic" 
+          placeholder="e.g., Integration, OOP, Thermodynamics" 
+        />
+        <button id="gen-notes-btn">📝 Notes</button>
+        <button id="gen-flashcards-btn">🎴 Flashcards</button>
+        <button id="gen-quiz-btn">❓ Quiz</button>
+      </div>
+
+      <h4>📝 Notes</h4>
+      <div id="notes-output" class="ai-box">
+        Enter a topic and click "Notes" to generate study notes
+      </div>
+
+      <h4>🎴 Flashcards</h4>
+      <div id="flashcards-output" class="ai-box">
+        Enter a topic and click "Flashcards" to generate Q&A flashcards
+      </div>
+
+      <h4>❓ Quiz (Easy → Medium → Hard)</h4>
+      <div id="quiz-output" class="ai-box">
+        Enter a topic and click "Quiz" to generate practice questions
+      </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="tool-section">
+      <h3>💡 Tips for Using AI Tools</h3>
+      <ul class="text-muted">
+        <li>Be specific with your topic (e.g., "Derivatives in Calculus" vs just "Math")</li>
+        <li>Use the generated materials as a study guide, not a replacement for understanding</li>
+        <li>Flashcards are great for memorization before exams</li>
+        <li>Quizzes help test your knowledge at different difficulty levels</li>
+        <li>Notes provide a quick overview - expand on them with your own research</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>
+      <strong>PeerFuse AI Tools</strong> • Powered by Google Gemini<br>
+      Remember: AI is a tool to enhance learning, not replace it
+    </p>
+  </footer>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+  <!-- PeerFuse JavaScript Modules -->
+  <script src="js/config.js"></script>
+  <script src="js/matching.js"></script>
+  <script src="js/ai-tools.js"></script>
+  
+  <script>
+    function goBackToMain() {
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

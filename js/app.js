@@ -404,9 +404,14 @@ async function handleSaveProfile() {
     if (createProfileBtn) window.UI.hide('create-profile-btn');
     if (editProfileBtn) window.UI.show('edit-profile-btn');
 
-    // Return to top of page after saving
+    // Show main sections and hide profile section
     setTimeout(() => {
       window.UI.hide('profile-section');
+      window.UI.show('match-section');
+      window.UI.show('prequiz-section');
+      window.UI.show('session-section');
+      window.UI.show('postquiz-section');
+      window.UI.show('feedback-section');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 1500);
   } catch (error) {
@@ -641,19 +646,25 @@ async function handleStartPreQuiz() {
     
     const userRef = firebase.database().ref(`users/${userKey}`);
     const snapshot = await userRef.once('value');
-    const profile = snapshot.val();
+    let profile = snapshot.val();
+
+    // Fallback to localStorage if Firebase profile not found
+    if (!profile) {
+      console.log('Profile not found in Firebase, checking localStorage...');
+      profile = window.Auth.LocalStorage.getUserProfile();
+    }
 
     console.log('Profile data:', profile);
     console.log('Strengths:', profile?.strengths);
     console.log('Weaknesses:', profile?.weaknesses);
 
-    if (!profile || ((!profile.strengths || profile.strengths.length === 0) && (!profile.weaknesses || profile.weaknesses.length === 0))) {
+    if (!profile || !profile.strengths || profile.strengths.length === 0 || !profile.weaknesses || profile.weaknesses.length === 0) {
       console.error('Profile check failed:', {
         hasProfile: !!profile,
         strengths: profile?.strengths,
         weaknesses: profile?.weaknesses
       });
-      window.UI.showToast('Please complete your profile first', 'error');
+      window.UI.showToast('Please complete your profile first with at least one strength and one weakness', 'error');
       return;
     }
 

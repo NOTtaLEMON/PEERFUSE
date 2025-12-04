@@ -44,6 +44,22 @@ except Exception as e:
     raise
 
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint - welcome message"""
+    return jsonify({
+        'message': 'PeerFuse backend is live and ready!',
+        'status': 'ok',
+        'endpoints': {
+            'health': '/health',
+            'notes': '/generate-notes',
+            'flashcards': '/generate-flashcards',
+            'quiz': '/generate-quiz',
+            'presession_quiz': '/generate-presession-quiz'
+        }
+    }), 200
+
+
 def safe_generate_content(prompt, max_retries=3):
     """
     Safely generate content with retry logic for rate limits

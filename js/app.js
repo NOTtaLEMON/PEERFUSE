@@ -1773,6 +1773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * Fix old Google Meet sessions by replacing with Jitsi links
+ * Uses a lock to ensure only one user updates the link
  */
 async function fixOldGoogleMeetSessions(userKey) {
   try {
@@ -1781,14 +1782,22 @@ async function fixOldGoogleMeetSessions(userKey) {
     const session = snapshot.val();
     
     if (session && session.meetLink && session.meetLink.includes('meet.google.com')) {
-      console.log('🔧 Fixing old Google Meet session...');
+      console.log('🔧 Old Google Meet session detected...');
       
-      // Generate new Jitsi link
-      const meetingRoomId = generateMeetingId();
+      // Use user1 as the one who fixes the link (to avoid race condition)
+      if (session.user1 !== userKey) {
+        console.log('⏳ Waiting for partner to fix the link...');
+        return; // Let user1 handle the fix
+      }
+      
+      console.log('🔧 Generating new Jitsi link...');
+      
+      // Generate new Jitsi link using session timestamp for consistency
+      const meetingRoomId = `${session.createdAt}-${Math.random().toString(36).substring(2, 8)}`;
       const newMeetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
       
       // Update both users' sessions
-      const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
+      const partnerKey = session.user2;
       await Promise.all([
         sessionRef.update({ meetLink: newMeetLink }),
         firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: newMeetLink })

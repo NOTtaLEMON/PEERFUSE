@@ -663,7 +663,7 @@ async function handleStartPreQuiz() {
     window.UI.show('prequiz-status');
 
     // Generate quiz via backend
-    const response = await fetch('http://localhost:5000/generate-presession-quiz', {
+    const response = await fetch('https://peerfuse-backend.onrender.com/generate-presession-quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

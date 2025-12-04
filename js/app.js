@@ -1770,3 +1770,33 @@ document.addEventListener('DOMContentLoaded', () => {
     mandatoryForm.addEventListener('submit', handleMandatoryFeedbackSubmit);
   }
 });
+
+/**
+ * Fix old Google Meet sessions by replacing with Jitsi links
+ */
+async function fixOldGoogleMeetSessions(userKey) {
+  try {
+    const sessionRef = firebase.database().ref(`sessions/${userKey}`);
+    const snapshot = await sessionRef.once('value');
+    const session = snapshot.val();
+    
+    if (session && session.meetLink && session.meetLink.includes('meet.google.com')) {
+      console.log('🔧 Fixing old Google Meet session...');
+      
+      // Generate new Jitsi link
+      const meetingRoomId = generateMeetingId();
+      const newMeetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
+      
+      // Update both users' sessions
+      const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
+      await Promise.all([
+        sessionRef.update({ meetLink: newMeetLink }),
+        firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: newMeetLink })
+      ]);
+      
+      console.log('✅ Session updated with Jitsi link:', newMeetLink);
+    }
+  } catch (error) {
+    console.error('Error fixing old session:', error);
+  }
+}

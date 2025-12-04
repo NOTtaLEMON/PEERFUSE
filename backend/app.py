@@ -24,12 +24,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = Flask(__name__)
-# Enable CORS for all origins (production-ready for public API)
-CORS(app, 
-     origins=["https://nottalemon.github.io", "http://localhost:8000", "http://127.0.0.1:8000"],
-     methods=["GET", "POST", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization"],
-     supports_credentials=False)
+
+# Enable CORS for all routes - simple and production-ready
+CORS(app)
 
 # Configure Gemini AI with validation
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')

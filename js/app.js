@@ -386,17 +386,10 @@ async function handleSaveProfile() {
     if (createProfileBtn) window.UI.hide('create-profile-btn');
     if (editProfileBtn) window.UI.show('edit-profile-btn');
 
-    // Hide profile section and show other sections
+    // Return to top of page after saving
     setTimeout(() => {
       window.UI.hide('profile-section');
-      window.UI.show('match-section');
-      window.UI.show('matching-section');
-      window.UI.show('quiz-builder-section');
-      window.UI.show('flashcard-section');
-      window.UI.show('prequiz-section');
-      window.UI.show('session-section');
-      window.UI.show('postquiz-section');
-      window.UI.show('ai-section');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 1500);
   } catch (error) {
     console.error('Error saving profile:', error);
@@ -1262,9 +1255,18 @@ function showSection(sectionId) {
   });
 }
 
+// Scroll to matching section without hiding other sections
+function scrollToMatching() {
+  const matchingSection = document.getElementById('matching-section');
+  if (matchingSection) {
+    matchingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 // Export functions for inline onclick handlers
 window.showNextMatch = showNextMatch;
 window.showSection = showSection;
+window.scrollToMatching = scrollToMatching;
 window.startSession = startSession;
 window.endSession = endSession;
 

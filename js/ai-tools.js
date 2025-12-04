@@ -4,6 +4,65 @@
  */
 
 const BACKEND_URL = 'http://localhost:5000';
+let backendAvailable = false;
+
+/**
+ * Check if backend is running
+ */
+async function checkBackend() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/health`, { 
+      method: 'GET',
+      signal: AbortSignal.timeout(2000)
+    });
+    backendAvailable = response.ok;
+    return response.ok;
+  } catch (error) {
+    backendAvailable = false;
+    return false;
+  }
+}
+
+/**
+ * Show backend startup instructions
+ */
+function showBackendInstructions() {
+  const message = `
+    <div style="padding: 40px; text-align: center;">
+      <h2 style="color: #dc3545; margin-bottom: 20px;">⚠️ Backend Server Not Running</h2>
+      
+      <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+        <h3 style="margin-top: 0; color: #856404;">To use AI features:</h3>
+        <ol style="line-height: 1.8; color: #856404;">
+          <li><strong>Double-click</strong> <code style="background: #fff; padding: 2px 8px; border-radius: 4px;">START_PEERFUSE.bat</code> in your project folder</li>
+          <li>Keep the terminal windows open</li>
+          <li>Come back and click the button again</li>
+        </ol>
+      </div>
+      
+      <div style="background: #d1ecf1; border: 2px solid #0c5460; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #0c5460;"><strong>💡 Tip:</strong> Use START_PEERFUSE.bat to launch everything automatically!</p>
+      </div>
+      
+      <button onclick="location.reload()" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px;">
+        Check Again
+      </button>
+    </div>
+  `;
+  
+  const modal = document.getElementById('ai-content-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const modalBody = document.getElementById('modal-body');
+  
+  if (modal && modalTitle && modalBody) {
+    modalTitle.textContent = 'Backend Server Required';
+    modalBody.innerHTML = message;
+    modal.style.display = 'flex';
+    modal.style.transform = 'translateX(0)';
+  } else {
+    alert('Backend server not running! Double-click START_PEERFUSE.bat to start it.');
+  }
+}
 
 /**
  * Show modal with content
@@ -117,6 +176,14 @@ function markdownToHTML(markdown) {
 async function generateContent(type) {
   console.log('🚀 generateContent called with type:', type);
   
+  // Check if backend is running first
+  const isBackendRunning = await checkBackend();
+  if (!isBackendRunning) {
+    console.error('❌ Backend server is not running');
+    showBackendInstructions();
+    return;
+  }
+  
   const topicInput = document.getElementById('session-topic');
   const modal = document.getElementById('ai-content-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -189,8 +256,23 @@ async function generateContent(type) {
     modalBody.innerHTML = htmlContent;
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
-    modalTitle.textContent = 'Error';
-    modalBody.innerHTML = `<p class="error">Failed to generate ${type}. Make sure the backend server is running at http://localhost:5000</p>`;
+    
+    // Check if it's a connection error
+    if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+      modalTitle.textContent = 'Connection Error';
+      modalBody.innerHTML = `
+        <div style="padding: 20px; text-align: center;">
+          <p class="error" style="font-size: 18px; margin-bottom: 20px;">⚠️ Cannot connect to backend server</p>
+          <p>Make sure the backend is running by double-clicking <strong>START_PEERFUSE.bat</strong></p>
+          <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Retry
+          </button>
+        </div>
+      `;
+    } else {
+      modalTitle.textContent = 'Error';
+      modalBody.innerHTML = `<p class="error">Failed to generate ${type}: ${error.message}</p>`;
+    }
   }
 }
 
@@ -237,10 +319,43 @@ function setupAIEventListeners() {
 }
 
 /**
- * Initialize AI tools
+ * Initialize AI tools and check backend status
  */
-function initGeminiAI() {
+async function initGeminiAI() {
   console.log('✅ AI Tools ready (using backend API at ' + BACKEND_URL + ')');
+  
+  // Check backend status and show indicator
+  const isRunning = await checkBackend();
+  const userBar = document.getElementById('user-bar');
+  
+  if (userBar) {
+    const statusIndicator = document.createElement('span');
+    statusIndicator.id = 'backend-status';
+    statusIndicator.style.cssText = `
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    `;
+    
+    if (isRunning) {
+      statusIndicator.textContent = '🟢 Backend Online';
+      statusIndicator.style.background = '#d4edda';
+      statusIndicator.style.color = '#155724';
+    } else {
+      statusIndicator.textContent = '🔴 Backend Offline';
+      statusIndicator.style.background = '#f8d7da';
+      statusIndicator.style.color = '#721c24';
+      statusIndicator.style.cursor = 'pointer';
+      statusIndicator.title = 'Click for instructions';
+      statusIndicator.onclick = showBackendInstructions;
+    }
+    
+    userBar.insertBefore(statusIndicator, userBar.firstChild);
+  }
+  
   return true;
 }
 

@@ -181,173 +181,6 @@ async function generateContent(type) {
 }
 
 /**
- * Generate match explanation
- * @param {Object} userA - First user
- * @param {Object} userB - Second user
- * @returns {Promise<string>} Explanation text
- */
-async function generateMatchExplanation(userA, userB) {
-  try {
-    const response = await fetch(`${BACKEND_URL}/generate-match-explanation`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        userA: {
-          strengths: Array.isArray(userA.strengths) ? userA.strengths : [],
-          weaknesses: Array.isArray(userA.weaknesses) ? userA.weaknesses : []
-        },
-        userB: {
-          strengths: Array.isArray(userB.strengths) ? userB.strengths : [],
-          weaknesses: Array.isArray(userB.weaknesses) ? userB.weaknesses : []
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.content;
-  } catch (error) {
-    console.error('Error generating match explanation:', error);
-    throw error;
-  }
-}
-
-/**
- * Handle match explanation generation
- */
-async function handleMatchExplanation() {
-  const outputDiv = document.getElementById('match-explanation');
-  if (!outputDiv) {
-    console.error('Match explanation div not found');
-    return;
-  }
-
-  try {
-    // Get current user
-    const currentUser = firebase.auth().currentUser;
-    if (!currentUser) {
-      outputDiv.innerHTML = '<p class="error">Please log in to view match explanations</p>';
-      return;
-    }
-
-    outputDiv.innerHTML = '<p class="text-muted">Loading your match data...</p>';
-
-    // Get user data from Firebase using UID
-    const userKey = currentUser.uid;
-    const userRef = firebase.database().ref(`users/${userKey}`);
-    const userSnapshot = await userRef.once('value');
-    const userData = userSnapshot.val();
-
-    if (!userData) {
-      outputDiv.innerHTML = '<p class="error">User profile not found. Please complete your profile first.</p>';
-      return;
-    }
-
-    // Get all users to find matches
-    const allUsersRef = firebase.database().ref('users');
-    const allUsersSnapshot = await allUsersRef.once('value');
-    const allUsers = allUsersSnapshot.val();
-
-    if (!allUsers) {
-      outputDiv.innerHTML = '<p class="error">No other users found</p>';
-      return;
-    }
-
-    // Convert to array and find best match
-    const candidates = Object.values(allUsers).filter(u => u.email !== userData.email);
-    
-    if (candidates.length === 0) {
-      outputDiv.innerHTML = '<p class="text-muted">No potential matches available yet. Invite friends to join!</p>';
-      return;
-    }
-
-    // Use matching algorithm to find best match
-    const bestMatch = window.MatchingAlgorithm?.findBestMatch?.(userData, candidates);
-    
-    if (!bestMatch) {
-      outputDiv.innerHTML = '<p class="error">Could not calculate matches. Please try again.</p>';
-      return;
-    }
-
-    // Get detailed score breakdown
-    const breakdown = window.MatchingAlgorithm?.getScoreBreakdown?.(userData, bestMatch.user);
-
-    outputDiv.innerHTML = `
-      <div class="ai-loading" style="text-align: center; padding: 40px;">
-        <div class="spinner" style="margin: 0 auto 16px;"></div>
-        <p style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">Analyzing your match...</p>
-        <p style="color: var(--muted); font-size: 14px;">This may take up to 2 minutes. Please wait...</p>
-        <div class="loading-dots" style="margin-top: 12px;">
-          <span style="animation: pulse 1.5s ease-in-out infinite;">●</span>
-          <span style="animation: pulse 1.5s ease-in-out 0.2s infinite;">●</span>
-          <span style="animation: pulse 1.5s ease-in-out 0.4s infinite;">●</span>
-        </div>
-      </div>
-    `;
-
-    // Generate AI explanation with actual match data
-    const response = await fetch(`${BACKEND_URL}/generate-match-explanation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userA: {
-          name: userData.name || 'You',
-          strengths: userData.strengths || [],
-          weaknesses: userData.weaknesses || [],
-          availability: userData.availability,
-          primaryGoal: userData.primaryGoal,
-          preferredMode: userData.preferredMode
-        },
-        userB: {
-          name: bestMatch.user.name || 'Your match',
-          strengths: bestMatch.user.strengths || [],
-          weaknesses: bestMatch.user.weaknesses || [],
-          availability: bestMatch.user.availability,
-          primaryGoal: bestMatch.user.primaryGoal,
-          preferredMode: bestMatch.user.preferredMode
-        },
-        matchScore: bestMatch.score,
-        scoreBreakdown: breakdown
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    // Display with formatting
-    const htmlContent = `
-      <div style="margin-bottom: 16px;">
-        <h4 style="color: var(--primary-dark); margin-bottom: 8px;">Match: ${bestMatch.user.name || 'Anonymous'}</h4>
-        <p style="font-size: 24px; font-weight: bold; color: var(--primary);">Match Score: ${bestMatch.score}</p>
-      </div>
-      <div style="margin-bottom: 16px; padding: 12px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius-sm);">
-        <strong>Score Breakdown:</strong>
-        <ul style="margin-top: 8px;">
-          ${breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>No detailed breakdown available</li>'}
-        </ul>
-      </div>
-      <div>
-        <strong>AI Explanation:</strong>
-        ${markdownToHTML(data.content)}
-      </div>
-    `;
-    
-    outputDiv.innerHTML = htmlContent;
-  } catch (error) {
-    console.error('Error generating match explanation:', error);
-    outputDiv.innerHTML = `<p class="error">Failed to generate explanation: ${error.message}</p>`;
-  }
-}
-
-/**
  * Set up event listeners for AI tools
  */
 function setupAIEventListeners() {
@@ -365,13 +198,6 @@ function setupAIEventListeners() {
       });
     }
   });
-  
-  // Set up match explanation button if it exists
-  const matchBtn = document.getElementById('gen-match-explanation-btn');
-  if (matchBtn) {
-    matchBtn.addEventListener('click', handleMatchExplanation);
-    console.log('Match explanation button: FOUND ✓');
-  }
   
   // Set up modal controls
   const closeModalBtn = document.getElementById('close-modal-btn');
@@ -419,13 +245,10 @@ if (document.readyState === 'loading') {
 
 // Export functions to global scope
 window.AITools = {
-  generateMatchExplanation,
   generateContent,
-  handleMatchExplanation,
   showModal,
   hideModal,
   downloadPDF
 };
 
 window.setupAIEventListeners = setupAIEventListeners;
-window.handleMatchExplanation = handleMatchExplanation;

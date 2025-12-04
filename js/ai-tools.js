@@ -116,8 +116,15 @@ async function generateContent(type) {
   const modalTitle = document.getElementById('modal-title');
   const modalBody = document.getElementById('modal-body');
   
-  if (!topicInput || !modal || !modalTitle || !modalBody) {
-    console.error(`Missing elements for ${type}`);
+  if (!topicInput) {
+    console.error('Missing topic input element: session-topic');
+    alert('Error: Topic input not found. Please refresh the page.');
+    return;
+  }
+  
+  if (!modal || !modalTitle || !modalBody) {
+    console.error('Missing modal elements:', { modal: !!modal, modalTitle: !!modalTitle, modalBody: !!modalBody });
+    alert('Error: Modal elements not found. Please refresh the page.');
     return;
   }
 

@@ -1539,6 +1539,21 @@ async function handleStartMeeting() {
       return;
     }
 
+    // FIX: If it's an old Google Meet link, regenerate as Jitsi
+    let meetLink = session.meetLink;
+    if (meetLink.includes('meet.google.com')) {
+      console.log('Converting old Google Meet link to Jitsi...');
+      const meetingRoomId = generateMeetingId();
+      meetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
+      
+      // Update both users' sessions
+      const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
+      await Promise.all([
+        sessionRef.update({ meetLink: meetLink }),
+        firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: meetLink })
+      ]);
+    }
+
     // Update session to show meeting started
     await sessionRef.update({ meetingStarted: true });
     
@@ -1546,8 +1561,8 @@ async function handleStartMeeting() {
     const linkContainer = document.getElementById('meeting-link-container');
     const linkElement = document.getElementById('meeting-link');
     
-    linkElement.href = session.meetLink;
-    linkElement.textContent = session.meetLink;
+    linkElement.href = meetLink;
+    linkElement.textContent = meetLink;
     
     window.UI.show('meeting-link-container');
     
@@ -1556,7 +1571,7 @@ async function handleStartMeeting() {
     await firebase.database().ref(`notifications/${partnerKey}`).set({
       type: 'meeting-ready',
       message: 'Your study buddy has started the meeting!',
-      meetLink: session.meetLink,
+      meetLink: meetLink,
       timestamp: Date.now()
     });
     
@@ -1564,7 +1579,7 @@ async function handleStartMeeting() {
     
     // Open the meeting in a new tab
     setTimeout(() => {
-      window.open(session.meetLink, '_blank');
+      window.open(meetLink, '_blank');
     }, 1000);
     
   } catch (error) {

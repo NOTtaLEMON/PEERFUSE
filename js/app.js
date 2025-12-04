@@ -1501,12 +1501,7 @@ async function handleAcceptMatch() {
     
     document.getElementById('session-partner-name').textContent = request.fromName || 'Your study buddy';
     
-    window.UI.showToast('Match accepted! Please provide feedback before continuing.', 'success');
-    
-    // SHOW MANDATORY FEEDBACK MODAL
-    setTimeout(() => {
-      showMandatoryFeedbackModal();
-    }, 1000);
+    window.UI.showToast('Match accepted! Click to start your meeting.', 'success');
     
     // Listen for when partner clicks "Start Meeting"
     listenForMeetingStart(userKey);
@@ -1583,6 +1578,11 @@ async function handleStartMeeting() {
     // Open the meeting in a new tab
     setTimeout(() => {
       window.open(meetLink, '_blank');
+      
+      // Show mandatory feedback modal after meeting starts
+      setTimeout(() => {
+        showMandatoryFeedbackModal();
+      }, 1000);
     }, 500);
     
   } catch (error) {
@@ -1664,9 +1664,9 @@ function initRatingSlider() {
   });
   
   // Allow clicking emojis to set value
-  emojis.forEach((emoji, index) => {
+  emojis.forEach((emoji) => {
     emoji.addEventListener('click', () => {
-      const value = index + 1;
+      const value = emoji.getAttribute('data-value');
       slider.value = value;
       updateSlider(value);
     });

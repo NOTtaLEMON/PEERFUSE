@@ -22,7 +22,7 @@ function showModal(title, htmlContent) {
   
   modalTitle.textContent = title;
   modalBody.innerHTML = htmlContent;
-  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 }
 
 /**
@@ -31,7 +31,7 @@ function showModal(title, htmlContent) {
 function hideModal() {
   const modal = document.getElementById('ai-content-modal');
   if (modal) {
-    modal.classList.add('hidden');
+    modal.style.display = 'none';
   }
 }
 
@@ -111,10 +111,19 @@ function markdownToHTML(markdown) {
  * @param {string} type - Content type: 'notes', 'flashcards', or 'quiz'
  */
 async function generateContent(type) {
+  console.log('🚀 generateContent called with type:', type);
+  
   const topicInput = document.getElementById('session-topic');
   const modal = document.getElementById('ai-content-modal');
   const modalTitle = document.getElementById('modal-title');
   const modalBody = document.getElementById('modal-body');
+  
+  console.log('🔍 Elements found:', {
+    topicInput: !!topicInput,
+    modal: !!modal,
+    modalTitle: !!modalTitle,
+    modalBody: !!modalBody
+  });
   
   if (!topicInput) {
     console.error('Missing topic input element: session-topic');
@@ -151,7 +160,7 @@ async function generateContent(type) {
       </div>
     </div>
   `;
-  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
 
   try {
     console.log(`Fetching ${type} for topic: ${topic}`);

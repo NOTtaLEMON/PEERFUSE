@@ -1521,7 +1521,7 @@ async function handleStartMeeting() {
     const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
     await firebase.database().ref(`notifications/${partnerKey}`).set({
       type: 'meeting-ready',
-      message: 'Your study partner has started the meeting!',
+      message: 'Your study buddy has started the meeting!',
       meetLink: session.meetLink,
       timestamp: Date.now()
     });

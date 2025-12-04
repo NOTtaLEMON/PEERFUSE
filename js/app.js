@@ -557,14 +557,14 @@ function startSession(peerName) {
   const sessionInfo = document.getElementById('session-info');
   if (!sessionInfo) return;
 
-  // Generate a random Google Meet-style link
-  const meetCode = Math.random().toString(36).substring(2, 12);
-  const meetLink = `https://meet.google.com/${meetCode}`;
+  // Generate a unique Jitsi Meet room
+  const meetingRoomId = generateMeetingId();
+  const meetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
 
   sessionInfo.innerHTML = `
     <p><strong>Session Partner:</strong> ${window.UI.escapeHtml(peerName)}</p>
     <p><strong>Status:</strong> <span style="color: var(--success);">● Active</span></p>
-    <p><strong>Google Meet Link:</strong></p>
+    <p><strong>Video Meeting Link (Jitsi):</strong></p>
     <div style="background: white; padding: 12px; border-radius: 8px; margin: 8px 0;">
       <a href="${meetLink}" target="_blank" style="color: var(--primary); font-weight: 600;">${meetLink}</a>
     </div>
@@ -1423,9 +1423,24 @@ async function sendMatchRequest(match) {
  */
 function listenForMatchAcceptance(userKey, match) {
   const sessionRef = firebase.database().ref(`sessions/${userKey}`);
-  sessionRef.on('value', (snapshot) => {
+  sessionRef.on('value', async (snapshot) => {
     const session = snapshot.val();
     if (session && session.status === 'accepted') {
+      // Check if we need to regenerate link (fix for old Google Meet links)
+      if (session.meetLink && session.meetLink.includes('meet.google.com')) {
+        console.log('Fixing old Google Meet link...');
+        const meetingRoomId = generateMeetingId();
+        const newMeetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
+        
+        // Update both users' sessions
+        const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
+        await Promise.all([
+          sessionRef.update({ meetLink: newMeetLink }),
+          firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: newMeetLink })
+        ]);
+        return; // Will trigger again with updated link
+      }
+      
       // Match was accepted!
       window.UI.hide('session-waiting');
       window.UI.show('session-ready');
@@ -1539,20 +1554,8 @@ async function handleStartMeeting() {
       return;
     }
 
-    // FIX: If it's an old Google Meet link, regenerate as Jitsi
-    let meetLink = session.meetLink;
-    if (meetLink.includes('meet.google.com')) {
-      console.log('Converting old Google Meet link to Jitsi...');
-      const meetingRoomId = generateMeetingId();
-      meetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
-      
-      // Update both users' sessions
-      const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
-      await Promise.all([
-        sessionRef.update({ meetLink: meetLink }),
-        firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: meetLink })
-      ]);
-    }
+    // Use the Jitsi link from session
+    const meetLink = session.meetLink;
 
     // Update session to show meeting started
     await sessionRef.update({ meetingStarted: true });
@@ -1575,12 +1578,12 @@ async function handleStartMeeting() {
       timestamp: Date.now()
     });
     
-    window.UI.showToast('Meeting link generated! Opening in new tab...', 'success');
+    window.UI.showToast('Opening video meeting...', 'success');
     
     // Open the meeting in a new tab
     setTimeout(() => {
       window.open(meetLink, '_blank');
-    }, 1000);
+    }, 500);
     
   } catch (error) {
     console.error('Error starting meeting:', error);

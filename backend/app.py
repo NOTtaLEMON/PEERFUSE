@@ -51,6 +51,19 @@ def safe_generate_content(prompt, max_retries=3):
     for attempt in range(max_retries):
         try:
             response = model.generate_content(prompt)
+            
+            # Check if response has text
+            if not hasattr(response, 'text') or not response.text:
+                # Try to get text from candidates
+                if hasattr(response, 'candidates') and response.candidates:
+                    text = response.candidates[0].content.parts[0].text
+                    # Create a simple object to return
+                    class ResponseWrapper:
+                        def __init__(self, txt):
+                            self.text = txt
+                    return ResponseWrapper(text)
+                raise Exception("Empty response from Gemini API")
+            
             return response
         except Exception as e:
             error_str = str(e)
@@ -66,6 +79,7 @@ def safe_generate_content(prompt, max_retries=3):
             
             # If not rate limit or last attempt, raise the error
             if attempt == max_retries - 1:
+                logger.error(f"Final error: {error_str}\n{traceback.format_exc()}")
                 raise
     
     raise Exception("Failed after maximum retries")
@@ -133,11 +147,15 @@ def list_models():
         logger.error(f"Error listing models: {str(e)}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/generate-notes', methods=['POST'])
-@app.route('/generate-flashcards', methods=['POST'])
-@app.route('/generate-quiz', methods=['POST'])
+@app.route('/generate-notes', methods=['POST', 'OPTIONS'])
+@app.route('/generate-flashcards', methods=['POST', 'OPTIONS'])
+@app.route('/generate-quiz', methods=['POST', 'OPTIONS'])
 def generate_content():
     """Universal content generation endpoint with robust error handling"""
+    # Handle preflight CORS requests
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     try:
         data = request.get_json()
         if not data:
@@ -157,11 +175,14 @@ def generate_content():
         # Generate content using Gemini with retry logic
         response = safe_generate_content(prompt)
         
+        # Safely extract text
+        response_text = response.text if hasattr(response, 'text') else str(response)
+        
         logger.info(f"Successfully generated {endpoint} for topic: {topic}")
         return jsonify({
             'success': True,
             'topic': topic,
-            'content': response.text
+            'content': response_text
         }), 200
         
     except Exception as e:
@@ -174,9 +195,13 @@ def generate_content():
 
 
 
-@app.route('/generate-presession-quiz', methods=['POST'])
+@app.route('/generate-presession-quiz', methods=['POST', 'OPTIONS'])
 def generate_presession_quiz():
     """Generate personalized pre-session quiz with robust error handling"""
+    # Handle preflight CORS requests
+    if request.method == 'OPTIONS':
+        return '', 200
+    
     try:
         data = request.get_json()
         if not data:
@@ -234,10 +259,13 @@ Make questions specific, practical, and relevant to each topic. Ensure variety i
         
         response = safe_generate_content(prompt)
         
+        # Safely extract text
+        response_text = response.text if hasattr(response, 'text') else str(response)
+        
         logger.info("Successfully generated pre-session quiz")
         return jsonify({
             'success': True,
-            'content': response.text
+            'content': response_text
         }), 200
         
     except Exception as e:

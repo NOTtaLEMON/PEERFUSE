@@ -23,6 +23,7 @@ function showModal(title, htmlContent) {
   modalTitle.textContent = title;
   modalBody.innerHTML = htmlContent;
   modal.style.display = 'flex';
+  modal.style.transform = 'translateX(0)';
 }
 
 /**
@@ -31,7 +32,10 @@ function showModal(title, htmlContent) {
 function hideModal() {
   const modal = document.getElementById('ai-content-modal');
   if (modal) {
-    modal.style.display = 'none';
+    modal.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
   }
 }
 
@@ -161,6 +165,7 @@ async function generateContent(type) {
     </div>
   `;
   modal.style.display = 'flex';
+  modal.style.transform = 'translateX(0)';
 
   try {
     console.log(`Fetching ${type} for topic: ${topic}`);

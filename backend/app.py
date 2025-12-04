@@ -316,10 +316,11 @@ if __name__ == '__main__':
     logger.info("=" * 50)
     
     # Run with production settings
+    port = int(os.environ.get('PORT', 5000))
     app.run(
         debug=False,
-        host='127.0.0.1',
-        port=5000,
+        host='0.0.0.0',  # Listen on all interfaces for cloud deployment
+        port=port,
         use_reloader=False,
         threaded=True
     )

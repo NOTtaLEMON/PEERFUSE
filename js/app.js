@@ -1006,34 +1006,75 @@ function displayPreQuizResults(profile) {
  * Handle post-quiz submit
  * @param {Event} e - Submit event
  */
-function handlePostQuizSubmit(e) {
+async function handlePostQuizSubmit(e) {
   e.preventDefault();
 
-  const rating = document.getElementById('peer-rating')?.value;
-  const feedback = document.getElementById('peer-feedback')?.value;
+  // Get all form values
+  const matchRelevance = document.getElementById('match-relevance')?.value;
+  const goalsMatch = document.querySelector('input[name="goals-match"]:checked')?.value;
+  const bestThing = document.getElementById('best-thing')?.value;
+  const leastFav = document.getElementById('least-fav')?.value;
+  const improvement = document.getElementById('improvement')?.value;
+  const featureRequest = document.getElementById('feature-request')?.value;
+  const additionalComments = document.getElementById('additional-comments')?.value;
 
-  if (!rating || !feedback) {
-    window.UI.showToast('Please complete all fields', 'error');
+  // Validate required fields
+  if (!matchRelevance || !goalsMatch || !bestThing || !leastFav || !improvement) {
+    window.UI.showToast('Please complete all required fields', 'error');
+    return;
+  }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    window.UI.showToast('Please log in to submit feedback', 'error');
     return;
   }
 
   const feedbackData = {
-    user: window.Auth.LocalStorage.getCurrentUser(),
-    rating: parseInt(rating),
-    feedback,
-    timestamp: Date.now()
+    userId: currentUser.uid,
+    userEmail: currentUser.email,
+    matchRelevance: parseInt(matchRelevance),
+    goalsMatch: goalsMatch,
+    bestThing: bestThing,
+    leastFavorite: leastFav,
+    improvementSuggestion: improvement,
+    featureRequest: featureRequest || 'None',
+    additionalComments: additionalComments || '',
+    timestamp: Date.now(),
+    submittedAt: new Date().toISOString()
   };
 
-  // Save to Firebase
-  if (window.FirebaseHelpers) {
-    window.FirebaseHelpers.saveFeedback(feedbackData);
+  try {
+    // Save to Firebase under 'feedback' collection
+    const feedbackRef = firebase.database().ref('feedback').push();
+    await feedbackRef.set(feedbackData);
+
+    window.UI.showStatus('feedback-status', 'Thank you for your feedback! 🎉', 'success');
+    window.UI.showToast('Feedback submitted successfully!', 'success');
+
+    // Clear form
+    window.UI.clearForm('postquiz-form');
+    
+    // Reset slider to default
+    const slider = document.getElementById('match-relevance');
+    if (slider) {
+      slider.value = 3;
+      const display = document.getElementById('relevance-display');
+      if (display) display.textContent = '3';
+      // Update emoji highlighting
+      document.querySelectorAll('.slider-emoji').forEach((emoji, index) => {
+        if (index === 2) {
+          emoji.classList.add('active');
+        } else {
+          emoji.classList.remove('active');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    window.UI.showStatus('feedback-status', 'Failed to submit feedback. Please try again.', 'error');
+    window.UI.showToast('Error submitting feedback', 'error');
   }
-
-  window.UI.showStatus('postquiz-status', 'Thank you for your feedback!', 'success');
-  window.UI.showToast('Feedback submitted!', 'success');
-
-  // Clear form
-  window.UI.clearForm('postquiz-form');
 }
 
 /**

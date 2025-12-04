@@ -237,8 +237,18 @@ Make questions specific, practical, and relevant to each topic. Ensure variety i
 
 
 if __name__ == '__main__':
-    print("🚀 Starting PeerFuse Backend Server...")
-    print("✅ Gemini API key configured")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    import sys
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    print("=" * 50)
+    print("PeerFuse Backend Server")
+    print("=" * 50)
+    print("Gemini API configured")
+    print("Model: gemini-2.5-flash")
+    print("Server: http://127.0.0.1:5000")
+    print("Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz, /generate-presession-quiz")
+    print("=" * 50)
+    print("Server is running - Keep this window open!")
+    print("=" * 50)
+    app.run(debug=False, host='127.0.0.1', port=5000, use_reloader=False)
 
 

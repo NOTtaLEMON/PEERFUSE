@@ -33,55 +33,49 @@
   </header>
 
   <!-- Main Content -->
-  <div class="ai-tools-container">
-    <button class="back-btn" onclick="goBackToMain()">← Back to Main</button>
+  <main>
+    <div class="container">
+      <button class="back-btn" onclick="goBackToMain()">← Back to Main</button>
 
-    <!-- Before Session: Quiz -->
-    <div class="tool-section">
-      <h3>✏️ After Session: Generate Study Materials</h3>
-      <p class="text-muted">
-        Enter a topic you covered in the session to generate notes, flashcards, and practice quizzes
-      </p>
-      
-      <div class="ai-input-group">
-        <input 
-          type="text" 
-          id="session-topic" 
-          placeholder="e.g., Integration, OOP, Thermodynamics" 
-        />
-        <button id="gen-notes-btn">📝 Notes</button>
-        <button id="gen-flashcards-btn">🎴 Flashcards</button>
-        <button id="gen-quiz-btn">❓ Quiz</button>
-      </div>
+      <!-- AI Study Materials Section -->
+      <section class="card">
+        <h2>✏️ Generate Study Materials</h2>
+        <p class="text-muted">
+          Enter a topic you covered in the session to generate notes, flashcards, and practice quizzes
+        </p>
+        
+        <div class="subsection">
+          <div class="mt-2">
+            <label for="session-topic">Topic to Study</label>
+            <input 
+              type="text" 
+              id="session-topic" 
+              placeholder="e.g., Integration, OOP, Thermodynamics" 
+              style="width: 100%; padding: 12px; font-size: 1rem;"
+            />
+          </div>
+          
+          <div class="match-form-actions mt-2">
+            <button id="gen-notes-btn" class="btn-primary">📝 Notes</button>
+            <button id="gen-flashcards-btn" class="btn-primary">🎴 Flashcards</button>
+            <button id="gen-quiz-btn" class="btn-primary">❓ Quiz</button>
+          </div>
+        </div>
 
-      <h4>📝 Notes</h4>
-      <div id="notes-output" class="ai-box">
-        Enter a topic and click "Notes" to generate study notes
-      </div>
-
-      <h4>🎴 Flashcards</h4>
-      <div id="flashcards-output" class="ai-box">
-        Enter a topic and click "Flashcards" to generate Q&A flashcards
-      </div>
-
-      <h4>❓ Quiz (Easy → Medium → Hard)</h4>
-      <div id="quiz-output" class="ai-box">
-        Enter a topic and click "Quiz" to generate practice questions
-      </div>
+        <!-- Tips Section -->
+        <div class="subsection mt-3">
+          <h3>💡 Tips for Using AI Tools</h3>
+          <ul class="text-muted" style="line-height: 1.8;">
+            <li>Be specific with your topic (e.g., "Derivatives in Calculus" vs just "Math")</li>
+            <li>Use the generated materials as a study guide, not a replacement for understanding</li>
+            <li>Flashcards are great for memorization before exams</li>
+            <li>Quizzes help test your knowledge at different difficulty levels</li>
+            <li>Notes provide a quick overview - expand on them with your own research</li>
+          </ul>
+        </div>
+      </section>
     </div>
-
-    <!-- Tips Section -->
-    <div class="tool-section">
-      <h3>💡 Tips for Using AI Tools</h3>
-      <ul class="text-muted">
-        <li>Be specific with your topic (e.g., "Derivatives in Calculus" vs just "Math")</li>
-        <li>Use the generated materials as a study guide, not a replacement for understanding</li>
-        <li>Flashcards are great for memorization before exams</li>
-        <li>Quizzes help test your knowledge at different difficulty levels</li>
-        <li>Notes provide a quick overview - expand on them with your own research</li>
-      </ul>
-    </div>
-  </div>
+  </main>
 
   <!-- Modal for AI Content -->
   <div id="ai-content-modal" class="modal" style="display: none;">

@@ -1282,3 +1282,215 @@ textarea:focus-visible {
   }
 }
 
+/* ========================================
+   FEEDBACK FORM STYLES
+   ======================================== */
+
+.subsection {
+  background: rgba(var(--primary-rgb), 0.03);
+  padding: 24px;
+  border-radius: var(--radius);
+  margin-top: 20px;
+}
+
+.subsection h3 {
+  color: var(--primary-dark);
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.3rem;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Rating Scale Styles */
+.rating-scale {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.rating-scale input[type="radio"] {
+  display: none;
+}
+
+.rating-label {
+  flex: 1;
+  min-width: 80px;
+  padding: 16px 8px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rating-label:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.rating-scale input[type="radio"]:checked + .rating-label {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+.rating-desc {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: normal;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* Button Group Styles */
+.button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.button-group input[type="radio"] {
+  display: none;
+}
+
+.btn-choice {
+  flex: 1;
+  min-width: 120px;
+  padding: 14px 20px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.btn-choice:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.button-group input[type="radio"]:checked + .btn-choice {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: scale(1.02);
+}
+
+/* Submit Button Styles */
+.btn-submit {
+  width: 100%;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.4);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+/* Enhanced Select Styles */
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.form-group select:hover {
+  border-color: var(--primary);
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+/* Enhanced Textarea Styles */
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.2s ease;
+}
+
+.form-group textarea:hover {
+  border-color: var(--primary);
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .rating-scale {
+    gap: 8px;
+  }
+  
+  .rating-label {
+    min-width: 60px;
+    padding: 12px 6px;
+    font-size: 0.9rem;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .btn-choice {
+    min-width: auto;
+  }
+  
+  .subsection {
+    padding: 16px;
+  }
+}
+
+

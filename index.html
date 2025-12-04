@@ -359,32 +359,142 @@
 
     <!-- Post-Session Quiz & Feedback -->
     <section class="card" id="postquiz-section">
-      <h2>📝 After Session: Generate Study Materials</h2>
-      <p class="text-muted">Enter a topic you covered in the session to generate notes, flashcards, and practice quizzes</p>
+      <h2>📝 After Session: Study Materials & Feedback</h2>
+      <p class="text-muted">Generate AI-powered study materials and rate your peer learning experience</p>
       
-      <div class="mt-2">
-        <label for="session-topic">Topic Covered</label>
-        <input 
-          type="text" 
-          id="session-topic" 
-          placeholder="e.g., Integration, Python Functions, Organic Chemistry"
-        />
+      <!-- AI Study Materials -->
+      <div class="subsection">
+        <h3>🤖 Generate Study Materials</h3>
+        <p class="text-muted">Enter a topic you covered in the session</p>
+        
+        <div class="mt-2">
+          <label for="session-topic">Topic Covered</label>
+          <input 
+            type="text" 
+            id="session-topic" 
+            placeholder="e.g., Integration, Python Functions, Organic Chemistry"
+          />
+        </div>
+        
+        <div class="match-form-actions mt-2">
+          <button type="button" id="gen-notes-btn" class="btn-primary">📄 Notes</button>
+          <button type="button" id="gen-flashcards-btn" class="btn-primary">🗂️ Flashcards</button>
+          <button type="button" id="gen-quiz-btn" class="btn-primary">❓ Quiz</button>
+        </div>
       </div>
       
-      <div class="match-form-actions mt-2">
-        <button type="button" id="gen-notes-btn">📄 Notes</button>
-        <button type="button" id="gen-flashcards-btn">🗂️ Flashcards</button>
-        <button type="button" id="gen-quiz-btn">❓ Quiz</button>
-      </div>
+      <hr class="mt-3">
       
-      <div id="notes-output" class="mt-3">
-        <p class="text-muted">Generate notes and they will appear here. You can view in full screen or download as PDF.</p>
-      </div>
-      <div id="flashcards-output" class="mt-3">
-        <p class="text-muted">Generate flashcards and they will appear here. You can view in full screen or download as PDF.</p>
-      </div>
-      <div id="quiz-output" class="mt-3">
-        <p class="text-muted">Generate a quiz and it will appear here. You can view in full screen or download as PDF.</p>
+      <!-- Feedback Form -->
+      <div class="subsection">
+        <h3>⭐ Rate Your Study Partner</h3>
+        <p class="text-muted">Help us improve your matching experience</p>
+        
+        <form id="postquiz-form">
+          <!-- Question 1: Match Relevance -->
+          <div class="form-group">
+            <label for="match-relevance">
+              <strong>1.</strong> How relevant was the peer you were matched with?
+            </label>
+            <div class="rating-scale">
+              <input type="radio" id="relevance-1" name="match-relevance" value="1" required>
+              <label for="relevance-1" class="rating-label">1<br><span class="rating-desc">Completely random</span></label>
+              
+              <input type="radio" id="relevance-2" name="match-relevance" value="2">
+              <label for="relevance-2" class="rating-label">2<br><span class="rating-desc">Somewhat off</span></label>
+              
+              <input type="radio" id="relevance-3" name="match-relevance" value="3">
+              <label for="relevance-3" class="rating-label">3<br><span class="rating-desc">Decent match</span></label>
+              
+              <input type="radio" id="relevance-4" name="match-relevance" value="4">
+              <label for="relevance-4" class="rating-label">4<br><span class="rating-desc">Great match</span></label>
+              
+              <input type="radio" id="relevance-5" name="match-relevance" value="5">
+              <label for="relevance-5" class="rating-label">5<br><span class="rating-desc">Perfect match</span></label>
+            </div>
+          </div>
+
+          <!-- Question 2: Goals/Interests -->
+          <div class="form-group mt-2">
+            <label for="goals-match">
+              <strong>2.</strong> Did the person you were matched with share your expected goals/interests?
+            </label>
+            <div class="button-group">
+              <input type="radio" id="goals-yes" name="goals-match" value="Yes" required>
+              <label for="goals-yes" class="btn-choice">✅ Yes</label>
+              
+              <input type="radio" id="goals-somewhat" name="goals-match" value="Somewhat">
+              <label for="goals-somewhat" class="btn-choice">🤔 Somewhat</label>
+              
+              <input type="radio" id="goals-no" name="goals-match" value="No">
+              <label for="goals-no" class="btn-choice">❌ No</label>
+            </div>
+          </div>
+
+          <!-- Question 3: Best Thing -->
+          <div class="form-group mt-2">
+            <label for="best-thing">
+              <strong>3.</strong> What was the best thing about your match?
+            </label>
+            <select id="best-thing" required>
+              <option value="">Choose one...</option>
+              <option value="Similar time zone">Similar time zone</option>
+              <option value="Same skill level">Same skill level</option>
+              <option value="Complementary skills">Complementary skills</option>
+              <option value="Shared interests">Shared interests</option>
+              <option value="Communication style">Communication style</option>
+              <option value="Teaching ability">Teaching ability</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Question 4: Improvement -->
+          <div class="form-group mt-2">
+            <label for="improvement">
+              <strong>4.</strong> If you could change one thing about your match, what would it be?
+            </label>
+            <textarea 
+              id="improvement" 
+              placeholder="Be specific... (e.g., 'Different time zone', 'More patient', 'Better at explaining')"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+
+          <!-- Question 5: Feature Request -->
+          <div class="form-group mt-2">
+            <label for="feature-request">
+              <strong>5.</strong> What is one feature you wish this platform had?
+            </label>
+            <select id="feature-request" required>
+              <option value="">Choose one...</option>
+              <option value="Chat feature">💬 Chat feature</option>
+              <option value="Profile pictures">📷 Profile pictures</option>
+              <option value="Calendar integration">📅 Calendar integration</option>
+              <option value="Video calling">📹 Video calling</option>
+              <option value="Study room booking">🏫 Study room booking</option>
+              <option value="Group study sessions">👥 Group study sessions</option>
+              <option value="Progress tracking">📊 Progress tracking</option>
+              <option value="Resource sharing">📚 Resource sharing</option>
+              <option value="Other">💡 Other</option>
+            </select>
+          </div>
+
+          <!-- Optional: Additional Comments -->
+          <div class="form-group mt-2">
+            <label for="peer-feedback">
+              <strong>Additional Comments</strong> (Optional)
+            </label>
+            <textarea 
+              id="peer-feedback" 
+              placeholder="Any other thoughts about your peer learning experience?"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="mt-2 btn-submit">Submit Feedback ✨</button>
+          <p class="status hidden" id="postquiz-status"></p>
+        </form>
       </div>
     </section>
 
@@ -429,20 +539,6 @@
         <button type="submit" class="mt-2">Submit Feedback</button>
         <p class="status hidden" id="postquiz-status"></p>
       </form>
-    </section>
-
-    <!-- AI Tools Section -->
-    <section class="card" id="ai-section">
-      <h2>🤖 AI-Powered Learning Tools</h2>
-      <p class="text-muted">Generate personalized study materials using Google Gemini AI</p>
-      
-      <button onclick="window.location.href='ai-tools.html'">
-        Open AI Learning Tools →
-      </button>
-      
-      <p class="footer-note mt-2">
-        Generate notes, flashcards, quizzes, and get AI-powered match explanations
-      </p>
     </section>
   </main>
 

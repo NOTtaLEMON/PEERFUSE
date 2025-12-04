@@ -15,7 +15,7 @@
 <body>
   <!-- Header -->
   <header class="hero">
-    <h1>🤝 PeerFuse</h1>
+    <h1>🤝 PeerFuse <span style="font-size: 0.4em; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; padding: 4px 12px; border-radius: 20px; vertical-align: middle; font-weight: 700; letter-spacing: 1px;">BETA</span></h1>
     <p>Match with peers who complement your learning strengths and weaknesses</p>
     <div class="user-bar" id="user-bar">
       <span id="user-welcome">Not signed in</span>
@@ -341,9 +341,11 @@
         <div style="padding: 20px; background: linear-gradient(135deg, var(--success), #059669); color: white; border-radius: var(--radius); margin-bottom: 16px; text-align: center;">
           <h3 style="margin-bottom: 8px; color: white;">✓ Match Accepted!</h3>
           <p style="margin-bottom: 16px; color: white;">You're paired with <strong id="session-partner-name">your study buddy</strong></p>
-          <button id="start-meeting-btn" style="background: white; color: var(--success); font-weight: 600; padding: 12px 24px;">
+          <button id="start-meeting-btn" style="background: white; color: var(--success); font-weight: 600; padding: 12px 24px; position: relative;">
             📹 Start Google Meet Session
+            <span style="position: absolute; top: -8px; right: -8px; background: #ff9500; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700;">SOON</span>
           </button>
+          <p style="margin-top: 12px; font-size: 13px; opacity: 0.9;">🚧 Google Meet integration coming soon! For now, use your preferred video chat.</p>
         </div>
         <div id="meeting-link-container" class="hidden" style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); text-align: center;">
           <p style="color: var(--primary-dark); font-weight: 600; margin-bottom: 8px;">Your Google Meet Link:</p>

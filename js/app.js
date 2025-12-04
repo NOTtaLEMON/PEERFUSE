@@ -1257,9 +1257,9 @@ function showSection(sectionId) {
 
 // Scroll to matching section without hiding other sections
 function scrollToMatching() {
-  const matchingSection = document.getElementById('matching-section');
-  if (matchingSection) {
-    matchingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const matchSection = document.getElementById('match-section');
+  if (matchSection) {
+    matchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 

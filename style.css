@@ -99,6 +99,97 @@ body {
 }
 
 /* ================================
+   BETA WARNING BANNER
+   ================================ */
+.beta-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 2px solid #f59e0b;
+  padding: 12px 20px;
+  z-index: 9999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.beta-warning-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.beta-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.beta-text {
+  flex: 1;
+  font-size: 14px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+.beta-text strong {
+  color: #78350f;
+  font-weight: 600;
+}
+
+.beta-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #92400e;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.beta-close:hover {
+  opacity: 1;
+}
+
+/* Adjust body padding when beta warning is visible */
+body:has(.beta-warning) {
+  padding-top: 60px;
+}
+
+@media (max-width: 768px) {
+  .beta-warning {
+    padding: 10px 15px;
+  }
+  
+  .beta-text {
+    font-size: 13px;
+  }
+  
+  .beta-icon {
+    font-size: 18px;
+  }
+  
+  body:has(.beta-warning) {
+    padding-top: 70px;
+  }
+}
+
+/* ================================
    AUTHENTICATION SCREEN
    ================================ */
 .auth-screen {

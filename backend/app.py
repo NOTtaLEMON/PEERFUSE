@@ -1,13 +1,24 @@
 """
 PeerFuse Backend API
 Flask server to handle Gemini AI requests securely
+Production-ready with proper error handling and logging
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
 import os
+import logging
+import traceback
+import time
 from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -15,15 +26,49 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend requests
 
-# Configure Gemini AI
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+# Configure Gemini AI with validation
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
 if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
+    logger.error("GEMINI_API_KEY not found in environment variables")
+    raise ValueError(
+        "GEMINI_API_KEY not found! Please set it in backend/.env file.\n"
+        "Get your API key from: https://makersuite.google.com/app/apikey"
+    )
 
-genai.configure(api_key=GEMINI_API_KEY)
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('models/gemini-2.5-flash')
+    logger.info("Gemini API configured successfully with model: gemini-2.5-flash")
+except Exception as e:
+    logger.error(f"Failed to configure Gemini API: {str(e)}")
+    raise
 
-# Use the latest Gemini 2.5 Flash model
-model = genai.GenerativeModel('models/gemini-2.5-flash')
+
+def safe_generate_content(prompt, max_retries=3):
+    """
+    Safely generate content with retry logic for rate limits
+    """
+    for attempt in range(max_retries):
+        try:
+            response = model.generate_content(prompt)
+            return response
+        except Exception as e:
+            error_str = str(e)
+            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {error_str}")
+            
+            # Check if it's a rate limit error
+            if '429' in error_str or 'rate limit' in error_str.lower():
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                    logger.info(f"Rate limited. Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    continue
+            
+            # If not rate limit or last attempt, raise the error
+            if attempt == max_retries - 1:
+                raise
+    
+    raise Exception("Failed after maximum retries")
 
 
 def generate_prompt(content_type, topic):
@@ -65,26 +110,39 @@ Make questions challenging but fair."""
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'ok', 'message': 'PeerFuse Backend is running'})
+    try:
+        return jsonify({
+            'status': 'ok',
+            'message': 'PeerFuse Backend is running',
+            'gemini_configured': GEMINI_API_KEY is not None
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/list-models', methods=['GET'])
 def list_models():
     """List all available Gemini models"""
     try:
+        logger.info("Listing available Gemini models")
         models = genai.list_models()
         model_names = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
-        return jsonify({"models": model_names})
+        return jsonify({"models": model_names}), 200
     except Exception as e:
+        logger.error(f"Error listing models: {str(e)}\n{traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/generate-notes', methods=['POST'])
 @app.route('/generate-flashcards', methods=['POST'])
 @app.route('/generate-quiz', methods=['POST'])
 def generate_content():
-    """Universal content generation endpoint"""
+    """Universal content generation endpoint with robust error handling"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         topic = data.get('topic', '').strip()
         
         if not topic:
@@ -92,27 +150,36 @@ def generate_content():
         
         # Extract content type from endpoint path
         endpoint = request.path.split('/')[-1].replace('generate-', '')
+        logger.info(f"Generating {endpoint} for topic: {topic}")
+        
         prompt = generate_prompt(endpoint, topic)
         
-        # Generate content using Gemini
-        response = model.generate_content(prompt)
+        # Generate content using Gemini with retry logic
+        response = safe_generate_content(prompt)
         
+        logger.info(f"Successfully generated {endpoint} for topic: {topic}")
         return jsonify({
             'success': True,
             'topic': topic,
             'content': response.text
-        })
+        }), 200
         
     except Exception as e:
-        print(f"Error generating content: {str(e)}")
-        return jsonify({'error': f'Failed to generate content: {str(e)}'}), 500
+        logger.error(f"Error generating content: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to generate content: {str(e)}'
+        }), 500
 
 
 @app.route('/generate-match-explanation', methods=['POST'])
 def generate_match_explanation():
-    """Generate explanation for why two users match"""
+    """Generate explanation for why two users match with robust error handling"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         user_a = data.get('userA', {})
         user_b = data.get('userB', {})
         match_score = data.get('matchScore', 0)
@@ -120,6 +187,8 @@ def generate_match_explanation():
         
         if not user_a or not user_b:
             return jsonify({'error': 'Both users are required'}), 400
+        
+        logger.info(f"Generating match explanation (score: {match_score})")
         
         a_name = user_a.get('name', 'Student A')
         b_name = user_b.get('name', 'Student B')
@@ -159,28 +228,37 @@ Write a friendly, encouraging explanation (2-3 paragraphs) about:
 
 Keep it concise and motivating!"""
         
-        response = model.generate_content(prompt)
+        response = safe_generate_content(prompt)
         
+        logger.info("Successfully generated match explanation")
         return jsonify({
             'success': True,
             'content': response.text
-        })
+        }), 200
         
     except Exception as e:
-        print(f"Error generating match explanation: {str(e)}")
-        return jsonify({'error': f'Failed to generate explanation: {str(e)}'}), 500
+        logger.error(f"Error generating match explanation: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to generate explanation: {str(e)}'
+        }), 500
 
 
 @app.route('/generate-presession-quiz', methods=['POST'])
 def generate_presession_quiz():
-    """Generate personalized pre-session quiz based on user's strengths and weaknesses"""
+    """Generate personalized pre-session quiz with robust error handling"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         strengths = data.get('strengths', [])
         weaknesses = data.get('weaknesses', [])
         
         if not strengths and not weaknesses:
             return jsonify({'error': 'Strengths and weaknesses are required'}), 400
+        
+        logger.info(f"Generating pre-session quiz (strengths: {len(strengths)}, weaknesses: {len(weaknesses)})")
         
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
@@ -224,31 +302,50 @@ Explanation: Brief explanation here.
 
 Make questions specific, practical, and relevant to each topic. Ensure variety in question types (conceptual, application, problem-solving)."""
         
-        response = model.generate_content(prompt)
+        response = safe_generate_content(prompt)
         
+        logger.info("Successfully generated pre-session quiz")
         return jsonify({
             'success': True,
             'content': response.text
-        })
+        }), 200
         
     except Exception as e:
-        print(f"Error generating pre-session quiz: {str(e)}")
-        return jsonify({'error': f'Failed to generate quiz: {str(e)}'}), 500
+        logger.error(f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': f'Failed to generate quiz: {str(e)}'
+        }), 500
 
 
 if __name__ == '__main__':
     import sys
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    print("=" * 50)
-    print("PeerFuse Backend Server")
-    print("=" * 50)
-    print("Gemini API configured")
-    print("Model: gemini-2.5-flash")
-    print("Server: http://127.0.0.1:5000")
-    print("Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz, /generate-presession-quiz")
-    print("=" * 50)
-    print("Server is running - Keep this window open!")
-    print("=" * 50)
-    app.run(debug=False, host='127.0.0.1', port=5000, use_reloader=False)
+    
+    # Configure UTF-8 output for Windows
+    if sys.platform == 'win32':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        except:
+            pass
+    
+    logger.info("=" * 50)
+    logger.info("PeerFuse Backend Server - Production Mode")
+    logger.info("=" * 50)
+    logger.info(f"Gemini API: {'Configured' if GEMINI_API_KEY else 'NOT CONFIGURED'}")
+    logger.info("Model: gemini-2.5-flash")
+    logger.info("Server: http://127.0.0.1:5000")
+    logger.info("Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz, /generate-presession-quiz")
+    logger.info("=" * 50)
+    logger.info("Server is running - Keep this terminal open!")
+    logger.info("=" * 50)
+    
+    # Run with production settings
+    app.run(
+        debug=False,
+        host='127.0.0.1',
+        port=5000,
+        use_reloader=False,
+        threaded=True
+    )
 
 

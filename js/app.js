@@ -1602,8 +1602,12 @@ function initRatingSlider() {
   // Initialize on page load
   updateSlider(slider.value);
   
-  // Update on slider change
+  // Update on slider change (both 'input' and 'change' for live updates)
   slider.addEventListener('input', (e) => {
+    updateSlider(e.target.value);
+  });
+  
+  slider.addEventListener('change', (e) => {
     updateSlider(e.target.value);
   });
   

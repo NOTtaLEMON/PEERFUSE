@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="PeerFuse - Connect with compatible study buddies based on complementary learning strengths and weaknesses" />
-  <title>PeerFuse | Complementary Peer Matching</title>
+  <title>PeerFuse | Find Your Study Buddy</title>
   
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤝</text></svg>">
@@ -16,7 +16,7 @@
   <!-- Header -->
   <header class="hero">
     <h1>🤝 PeerFuse <span style="font-size: 0.4em; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; padding: 4px 12px; border-radius: 20px; vertical-align: middle; font-weight: 700; letter-spacing: 1px;">BETA</span></h1>
-    <p>Match with peers who complement your learning strengths and weaknesses</p>
+    <p>Link up with study buddies who complement your learning strengths and weaknesses</p>
     <div class="user-bar" id="user-bar">
       <span id="user-welcome">Not signed in</span>
       <button id="notifications-btn" class="hidden" style="position: relative; margin-right: 12px;">
@@ -30,7 +30,7 @@
     <nav class="nav-bar hidden" id="nav-bar">
       <button onclick="showSection('profile-section')" class="nav-btn hidden" id="create-profile-btn">📋 Create Profile</button>
       <button onclick="showSection('profile-section')" class="nav-btn hidden" id="edit-profile-btn">📋 Edit Profile</button>
-      <button onclick="scrollToMatching()" class="nav-btn">🔍 Find Match</button>
+      <button onclick="scrollToMatching()" class="nav-btn">🔍 Find Study Buddy</button>
       <button onclick="window.location.href='ai-tools.html'" class="nav-btn">🤖 AI Tools</button>
     </nav>
   </header>
@@ -259,7 +259,7 @@
       <p class="status hidden" id="prequiz-status"></p>
     </section>
 
-    <!-- Matching Section -->
+    <!-- Find Study Buddy Section -->
     <section class="card" id="match-section">
       <h2>🔍 Find Your Perfect Study Buddy</h2>
       <p class="text-muted">
@@ -269,7 +269,7 @@
 
       <form id="simpleMatchForm" onsubmit="return false;">
         <p class="text-muted">
-          Using your profile preferences to find the best match. You can adjust additional preferences below:
+          Using your profile preferences to find the best buddy. You can adjust additional preferences below:
         </p>
 
         <div class="two-col">
@@ -311,7 +311,7 @@
         </div>
 
         <div class="match-form-actions">
-          <button type="button" id="find-match-btn">🔍 Find My Perfect Match</button>
+          <button type="button" id="find-match-btn">🔍 Find My Study Buddy</button>
         </div>
       </form>
 
@@ -321,12 +321,12 @@
     <!-- Session Section -->
     <section class="card" id="session-section">
       <h2>💬 Study Session</h2>
-      <p class="text-muted">Connect with your matched peer and start learning together</p>
+      <p class="text-muted">Connect with your study buddy and start learning together</p>
       
       <div id="session-waiting" class="hidden">
         <div style="text-align: center; padding: 20px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius); margin-bottom: 16px;">
-          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Match Request Sent!</h3>
-          <p>Waiting for <strong id="match-partner-name">your partner</strong> to accept...</p>
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Buddy Request Sent!</h3>
+          <p>Waiting for <strong id="match-partner-name">your buddy</strong> to accept...</p>
           <div class="loading-dots" style="margin-top: 12px;">
             <span style="animation: pulse 1.5s ease-in-out infinite;">●</span>
             <span style="animation: pulse 1.5s ease-in-out 0.2s infinite;">●</span>
@@ -337,7 +337,7 @@
 
       <div id="session-pending" class="hidden">
         <div style="padding: 20px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius); margin-bottom: 16px;">
-          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Match Request Received!</h3>
+          <h3 style="color: var(--primary-dark); margin-bottom: 8px;">Buddy Request Received!</h3>
           <p><strong id="requester-name">Someone</strong> wants to study with you</p>
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button id="accept-match-btn" style="flex: 1; background: var(--success);">✓ Accept</button>
@@ -348,7 +348,7 @@
 
       <div id="session-ready" class="hidden">
         <div style="padding: 20px; background: linear-gradient(135deg, var(--success), #059669); color: white; border-radius: var(--radius); margin-bottom: 16px; text-align: center;">
-          <h3 style="margin-bottom: 8px; color: white;">✓ Match Accepted!</h3>
+          <h3 style="margin-bottom: 8px; color: white;">✓ Buddy Link Confirmed!</h3>
           <p style="margin-bottom: 16px; color: white;">You're paired with <strong id="session-partner-name">your study buddy</strong></p>
           <button id="start-meeting-btn" style="background: white; color: var(--success); font-weight: 600; padding: 12px 24px; position: relative;">
             📹 Start Google Meet Session
@@ -359,12 +359,12 @@
         <div id="meeting-link-container" class="hidden" style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); text-align: center;">
           <p style="color: var(--primary-dark); font-weight: 600; margin-bottom: 8px;">Your Google Meet Link:</p>
           <a id="meeting-link" href="#" target="_blank" style="color: var(--primary); font-size: 16px; word-break: break-all;"></a>
-          <p style="margin-top: 12px; font-size: 14px; color: var(--muted);">Both you and your partner have access to this link. Click to join!</p>
+          <p style="margin-top: 12px; font-size: 14px; color: var(--muted);">Both you and your buddy have access to this link. Click to join!</p>
         </div>
       </div>
       
       <div id="session-info">
-        <p class="text-muted">Find a match first to start a session</p>
+        <p class="text-muted">Find a study buddy first to start a session</p>
       </div>
     </section>
 
@@ -399,13 +399,13 @@
       <!-- Feedback Form -->
       <div class="subsection">
         <h3>⭐ Rate Your Study Buddy</h3>
-        <p class="text-muted">Help us improve your matching experience</p>
+        <p class="text-muted">Help us improve your buddy-finding experience</p>
         
         <form id="postquiz-form">
-          <!-- Question 1: Match Relevance -->
+          <!-- Question 1: Buddy Relevance -->
           <div class="form-group">
             <label for="match-relevance">
-              <strong>1.</strong> How relevant was the peer you were matched with?
+              <strong>1.</strong> How relevant was the study buddy you were linked with?
             </label>
             <div class="slider-container">
               <input 
@@ -422,9 +422,9 @@
               <div class="slider-labels">
                 <span class="slider-emoji" data-value="1">😞<br><small>Completely random</small></span>
                 <span class="slider-emoji" data-value="2">😕<br><small>Somewhat off</small></span>
-                <span class="slider-emoji" data-value="3">😐<br><small>Decent match</small></span>
-                <span class="slider-emoji" data-value="4">😊<br><small>Great match</small></span>
-                <span class="slider-emoji" data-value="5">🤩<br><small>Perfect match</small></span>
+                <span class="slider-emoji" data-value="3">😐<br><small>Decent buddy</small></span>
+                <span class="slider-emoji" data-value="4">😊<br><small>Great buddy</small></span>
+                <span class="slider-emoji" data-value="5">🤩<br><small>Perfect buddy</small></span>
               </div>
               <div class="slider-value-display">
                 <span id="relevance-display">3</span>
@@ -435,7 +435,7 @@
           <!-- Question 2: Goals/Interests -->
           <div class="form-group mt-2">
             <label for="goals-match">
-              <strong>2.</strong> Did the person you were matched with share your expected goals/interests?
+              <strong>2.</strong> Did your study buddy share your expected goals/interests?
             </label>
             <div class="button-group">
               <input type="radio" id="goals-yes" name="goals-match" value="Yes" required>
@@ -452,7 +452,7 @@
           <!-- Question 3: Best Thing -->
           <div class="form-group mt-2">
             <label for="best-thing">
-              <strong>3.</strong> What was the best thing about your match?
+              <strong>3.</strong> What was the best thing about your study buddy?
             </label>
             <select id="best-thing" required>
               <option value="">Choose one...</option>
@@ -469,7 +469,7 @@
           <!-- Question 4: Least Favorite Part -->
           <div class="form-group mt-2">
             <label for="least-fav">
-              <strong>4.</strong> What was the least favorite part of your match?
+              <strong>4.</strong> What was the least favorite part of your study buddy?
             </label>
             <select id="least-fav" required>
               <option value="">Choose one...</option>
@@ -488,7 +488,7 @@
           <!-- Question 5: Improvement -->
           <div class="form-group mt-2">
             <label for="improvement">
-              <strong>5.</strong> If you could change one thing about your match, what would it be?
+              <strong>5.</strong> If you could change one thing about your study buddy, what would it be?
             </label>
             <textarea 
               id="improvement" 

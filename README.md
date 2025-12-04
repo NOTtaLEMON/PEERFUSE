@@ -1,14 +1,14 @@
 # PeerFuse
 
-**PeerFuse** is a peer-matching web app that connects students based on complementary learning strengths and weaknesses. It helps users find ideal study partners, take quizzes, exchange feedback, and access AI-powered learning tools.
+**PeerFuse** is a peer-linking web app that connects students based on complementary learning strengths and weaknesses. It helps users find ideal study buddies, take quizzes, exchange feedback, and access AI-powered learning tools.
 
 ## Features
 
 - 🔐 **Firebase Authentication** - Secure email/password login
 - 🧠 **Smart Profile System** - Track academic strengths and weaknesses
-- 🤝 **Intelligent Matching Algorithm** - Pairs based on complementary skills
+- 🤝 **Intelligent Buddy-Finding Algorithm** - Links you based on complementary skills
 - 📊 **Pre/Post-Session Quizzes** - Measure learning progress
-- ⭐ **Peer Feedback System** - Rate and review study partners
+- ⭐ **Peer Feedback System** - Rate and review study buddies
 - 🤖 **AI Learning Tools** - Generate notes, flashcards, and quizzes via Gemini AI
 
 ## Tech Stack
@@ -76,24 +76,24 @@ PEERFUSE/
 1. **Sign Up/Login** → Create account or sign in
 2. **Create Profile** → Enter strengths and weaknesses
 3. **Take Pre-Quiz** → Rate current knowledge
-4. **Find Match** → Get paired with complementary peer
+4. **Find Study Buddy** → Get linked with complementary peer
 5. **Study Session** → Connect via Google Meet
 6. **Post-Quiz** → Measure improvement
-7. **Give Feedback** → Rate your study partner
+7. **Give Feedback** → Rate your study buddy
 8. **AI Tools** → Generate study materials
 
-## Matching Algorithm
+## Buddy-Finding Algorithm
 
 The algorithm uses weighted scoring across multiple dimensions:
 
-- **Availability** (weight: 100) - Must match for scheduling
+- **Availability** (weight: 100) - Must align for scheduling
 - **Complementary Skills** (weight: 30 each) - Your weakness = their strength
 - **Learning Preferences** (weights: 3-8) - Goals, frequency, personality
 - **Logistics** (weights: 3-4) - Time zone, session length
 
 ## Team
 
-- **Anand** – Matching logic, frontend architecture  
+- **Anand** – Buddy-finding logic, frontend architecture  
 - **Rishabh** – Firebase integration  
 - **Anushka & Shreya** – UI/UX and HTML design
 - **Aravind** – AI Integration and Surveys

@@ -1203,6 +1203,56 @@ textarea:focus-visible {
   transform: translateX(100%);
 }
 
+/* Mandatory Feedback Modal - Center Overlay Style */
+#mandatory-feedback-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+}
+
+#mandatory-feedback-modal.hidden {
+  display: none;
+  transform: none;
+}
+
+#mandatory-feedback-modal .modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+#mandatory-feedback-modal .modal-content {
+  position: relative;
+  z-index: 1;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .modal-content {
   display: flex;
   flex-direction: column;

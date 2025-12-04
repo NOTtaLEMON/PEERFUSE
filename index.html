@@ -57,6 +57,97 @@
     </div>
   </div>
 
+  <!-- Mandatory Feedback Modal -->
+  <div id="mandatory-feedback-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px; margin: -24px -24px 24px -24px; border-radius: var(--radius) var(--radius) 0 0;">
+        <h2 style="margin: 0; color: white;">⭐ Help Us Improve PeerFuse</h2>
+        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">Your feedback is required to continue using the platform</p>
+      </div>
+      
+      <form id="mandatory-feedback-form">
+        <!-- Question 1: Buddy Relevance -->
+        <div class="form-group">
+          <label for="modal-match-relevance">
+            <strong>1.</strong> How relevant was the study buddy you were linked with? *
+          </label>
+          <div class="slider-container">
+            <input 
+              type="range" 
+              id="modal-match-relevance" 
+              name="match-relevance" 
+              min="1" 
+              max="5" 
+              value="3" 
+              step="1"
+              class="rating-slider"
+              required
+            >
+            <div class="slider-labels">
+              <span class="slider-emoji" data-value="1">😞<br><small>Random</small></span>
+              <span class="slider-emoji" data-value="2">😕<br><small>Off</small></span>
+              <span class="slider-emoji" data-value="3">😐<br><small>Decent</small></span>
+              <span class="slider-emoji" data-value="4">😊<br><small>Great</small></span>
+              <span class="slider-emoji" data-value="5">🤩<br><small>Perfect</small></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 2: Goals/Interests -->
+        <div class="form-group mt-2">
+          <label for="modal-goals-match">
+            <strong>2.</strong> Did your study buddy share your expected goals/interests? *
+          </label>
+          <div class="button-group">
+            <input type="radio" id="modal-goals-yes" name="goals-match" value="Yes" required>
+            <label for="modal-goals-yes" class="btn-choice">✅ Yes</label>
+            
+            <input type="radio" id="modal-goals-somewhat" name="goals-match" value="Somewhat">
+            <label for="modal-goals-somewhat" class="btn-choice">🤔 Somewhat</label>
+            
+            <input type="radio" id="modal-goals-no" name="goals-match" value="No">
+            <label for="modal-goals-no" class="btn-choice">❌ No</label>
+          </div>
+        </div>
+
+        <!-- Question 3: Best Thing -->
+        <div class="form-group mt-2">
+          <label for="modal-best-thing">
+            <strong>3.</strong> What was the best thing about your study buddy? *
+          </label>
+          <select id="modal-best-thing" required>
+            <option value="">Choose one...</option>
+            <option value="Similar time zone">Similar time zone</option>
+            <option value="Complementary skills">Complementary skills</option>
+            <option value="Shared interests">Shared interests</option>
+            <option value="Communication style">Communication style</option>
+            <option value="Teaching ability">Teaching ability</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Question 4: Improvement -->
+        <div class="form-group mt-2">
+          <label for="modal-improvement">
+            <strong>4.</strong> If you could change one thing, what would it be? *
+          </label>
+          <textarea 
+            id="modal-improvement" 
+            placeholder="Be specific..."
+            rows="3"
+            required
+          ></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button type="submit" style="flex: 1; background: var(--success); font-weight: 600;">Submit Feedback & Continue ✨</button>
+        </div>
+        <p class="status hidden" id="modal-feedback-status" style="margin-top: 12px;"></p>
+      </form>
+    </div>
+  </div>
+
   <!-- Authentication Screen -->
   <div class="auth-screen" id="auth-screen">
     <div class="auth-card">

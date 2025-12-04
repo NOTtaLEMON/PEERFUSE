@@ -1486,7 +1486,12 @@ async function handleAcceptMatch() {
     
     document.getElementById('session-partner-name').textContent = request.fromName || 'Your study buddy';
     
-    window.UI.showToast('Match accepted! You can now start your meeting.', 'success');
+    window.UI.showToast('Match accepted! Please provide feedback before continuing.', 'success');
+    
+    // SHOW MANDATORY FEEDBACK MODAL
+    setTimeout(() => {
+      showMandatoryFeedbackModal();
+    }, 1000);
     
     // Listen for when partner clicks "Start Meeting"
     listenForMeetingStart(userKey);
@@ -1652,9 +1657,100 @@ function initRatingSlider() {
   });
 }
 
+/**
+ * Show mandatory feedback modal
+ */
+function showMandatoryFeedbackModal() {
+  const modal = document.getElementById('mandatory-feedback-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+}
+
+/**
+ * Hide mandatory feedback modal
+ */
+function hideMandatoryFeedbackModal() {
+  const modal = document.getElementById('mandatory-feedback-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+}
+
+/**
+ * Handle mandatory feedback form submission
+ */
+async function handleMandatoryFeedbackSubmit(e) {
+  e.preventDefault();
+
+  const matchRelevance = document.getElementById('modal-match-relevance')?.value;
+  const goalsMatch = document.querySelector('input[name="goals-match"]:checked')?.value;
+  const bestThing = document.getElementById('modal-best-thing')?.value;
+  const improvement = document.getElementById('modal-improvement')?.value;
+
+  if (!matchRelevance || !goalsMatch || !bestThing || !improvement) {
+    window.UI.showToast('Please complete all required fields', 'error');
+    return;
+  }
+
+  const currentUser = firebase.auth().currentUser;
+  if (!currentUser) {
+    window.UI.showToast('Please log in to submit feedback', 'error');
+    return;
+  }
+
+  const feedbackData = {
+    userId: currentUser.uid,
+    userEmail: currentUser.email,
+    matchRelevance: parseInt(matchRelevance),
+    goalsMatch: goalsMatch,
+    bestThing: bestThing,
+    improvementSuggestion: improvement,
+    feedbackType: 'mandatory',
+    timestamp: Date.now(),
+    submittedAt: new Date().toISOString()
+  };
+
+  try {
+    const feedbackRef = firebase.database().ref('feedback').push();
+    await feedbackRef.set(feedbackData);
+
+    // Also mark user as having submitted feedback
+    await firebase.database().ref(`users/${currentUser.uid}/feedbackSubmitted`).set(true);
+
+    document.getElementById('modal-feedback-status').textContent = 'Thank you for your feedback! 🎉';
+    document.getElementById('modal-feedback-status').className = 'status success';
+    document.getElementById('modal-feedback-status').classList.remove('hidden');
+
+    window.UI.showToast('Feedback submitted! You can now continue.', 'success');
+
+    setTimeout(() => {
+      hideMandatoryFeedbackModal();
+      // Clear the form
+      document.getElementById('mandatory-feedback-form').reset();
+      document.getElementById('modal-feedback-status').classList.add('hidden');
+    }, 1500);
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    document.getElementById('modal-feedback-status').textContent = 'Failed to submit. Please try again.';
+    document.getElementById('modal-feedback-status').className = 'status error';
+    document.getElementById('modal-feedback-status').classList.remove('hidden');
+  }
+}
+
 // Initialize slider when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initRatingSlider);
 } else {
   initRatingSlider();
 }
+
+// Set up mandatory feedback form listener
+document.addEventListener('DOMContentLoaded', () => {
+  const mandatoryForm = document.getElementById('mandatory-feedback-form');
+  if (mandatoryForm) {
+    mandatoryForm.addEventListener('submit', handleMandatoryFeedbackSubmit);
+  }
+});

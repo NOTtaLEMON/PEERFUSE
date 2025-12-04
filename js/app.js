@@ -1534,3 +1534,51 @@ function listenForMeetingStart(userKey) {
   });
 }
 
+/**
+ * Initialize rating slider with emoji feedback
+ */
+function initRatingSlider() {
+  const slider = document.getElementById('match-relevance');
+  const display = document.getElementById('relevance-display');
+  const emojis = document.querySelectorAll('.slider-emoji');
+  
+  if (!slider || !display) return;
+  
+  function updateSlider(value) {
+    display.textContent = value;
+    
+    // Update emoji highlighting
+    emojis.forEach((emoji, index) => {
+      const emojiValue = index + 1;
+      if (emojiValue === parseInt(value)) {
+        emoji.classList.add('active');
+      } else {
+        emoji.classList.remove('active');
+      }
+    });
+  }
+  
+  // Initialize on page load
+  updateSlider(slider.value);
+  
+  // Update on slider change
+  slider.addEventListener('input', (e) => {
+    updateSlider(e.target.value);
+  });
+  
+  // Allow clicking emojis to set value
+  emojis.forEach((emoji, index) => {
+    emoji.addEventListener('click', () => {
+      const value = index + 1;
+      slider.value = value;
+      updateSlider(value);
+    });
+  });
+}
+
+// Initialize slider when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initRatingSlider);
+} else {
+  initRatingSlider();
+}

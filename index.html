@@ -396,21 +396,28 @@
             <label for="match-relevance">
               <strong>1.</strong> How relevant was the peer you were matched with?
             </label>
-            <div class="rating-scale">
-              <input type="radio" id="relevance-1" name="match-relevance" value="1" required>
-              <label for="relevance-1" class="rating-label">1<br><span class="rating-desc">Completely random</span></label>
-              
-              <input type="radio" id="relevance-2" name="match-relevance" value="2">
-              <label for="relevance-2" class="rating-label">2<br><span class="rating-desc">Somewhat off</span></label>
-              
-              <input type="radio" id="relevance-3" name="match-relevance" value="3">
-              <label for="relevance-3" class="rating-label">3<br><span class="rating-desc">Decent match</span></label>
-              
-              <input type="radio" id="relevance-4" name="match-relevance" value="4">
-              <label for="relevance-4" class="rating-label">4<br><span class="rating-desc">Great match</span></label>
-              
-              <input type="radio" id="relevance-5" name="match-relevance" value="5">
-              <label for="relevance-5" class="rating-label">5<br><span class="rating-desc">Perfect match</span></label>
+            <div class="slider-container">
+              <input 
+                type="range" 
+                id="match-relevance" 
+                name="match-relevance" 
+                min="1" 
+                max="5" 
+                value="3" 
+                step="1"
+                class="rating-slider"
+                required
+              >
+              <div class="slider-labels">
+                <span class="slider-emoji" data-value="1">😞<br><small>Completely random</small></span>
+                <span class="slider-emoji" data-value="2">😕<br><small>Somewhat off</small></span>
+                <span class="slider-emoji" data-value="3">😐<br><small>Decent match</small></span>
+                <span class="slider-emoji" data-value="4">😊<br><small>Great match</small></span>
+                <span class="slider-emoji" data-value="5">🤩<br><small>Perfect match</small></span>
+              </div>
+              <div class="slider-value-display">
+                <span id="relevance-display">3</span>
+              </div>
             </div>
           </div>
 

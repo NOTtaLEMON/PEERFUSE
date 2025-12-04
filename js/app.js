@@ -1459,9 +1459,9 @@ async function handleAcceptMatch() {
       return;
     }
 
-    // Generate a unique Google Meet link (using a simple UUID-based room ID)
+    // Generate a unique Jitsi Meet room link
     const meetingRoomId = generateMeetingId();
-    const meetLink = `https://meet.google.com/${meetingRoomId}`;
+    const meetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
     
     // Create session data
     const sessionData = {
@@ -1574,15 +1574,13 @@ async function handleStartMeeting() {
 }
 
 /**
- * Generate a random meeting ID for Google Meet
+ * Generate a random meeting ID for Jitsi Meet
  */
 function generateMeetingId() {
-  // Google Meet uses format like: abc-defg-hij
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  const part1 = Array.from({length: 3}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part2 = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  const part3 = Array.from({length: 3}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `${part1}-${part2}-${part3}`;
+  // Generate a unique room ID using timestamp + random string
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substring(2, 10);
+  return `${timestamp}-${randomStr}`;
 }
 
 /**

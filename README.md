@@ -77,7 +77,7 @@ PEERFUSE/
 2. **Create Profile** → Enter strengths and weaknesses
 3. **Take Pre-Quiz** → Rate current knowledge
 4. **Find Study Buddy** → Get linked with complementary peer
-5. **Study Session** → Connect via Google Meet
+5. **Study Session** → Connect via video (Jitsi Meet)
 6. **Post-Quiz** → Measure improvement
 7. **Give Feedback** → Rate your study buddy
 8. **AI Tools** → Generate study materials

@@ -4,6 +4,80 @@
  */
 
 /**
+ * Parse UTC offset from timezone string (e.g., "UTC+05:30 (India)" -> 5.5)
+ * @param {string} timezone - Timezone string
+ * @returns {number} UTC offset in hours
+ */
+function parseUTCOffset(timezone) {
+  if (!timezone) return 0;
+  const match = timezone.match(/UTC([+-])(\d{1,2}):(\d{2})/);
+  if (!match) return 0;
+  const sign = match[1] === '+' ? 1 : -1;
+  const hours = parseInt(match[2]);
+  const minutes = parseInt(match[3]);
+  return sign * (hours + minutes / 60);
+}
+
+/**
+ * Check if timezones are compatible based on availability overlap
+ * @param {string} tzA - User A's timezone
+ * @param {string} tzB - User B's timezone
+ * @param {string} availA - User A's availability window
+ * @param {string} availB - User B's availability window
+ * @returns {Object} {compatible: boolean, score: number}
+ */
+function checkTimezoneCompatibility(tzA, tzB, availA, availB) {
+  const offsetA = parseUTCOffset(tzA);
+  const offsetB = parseUTCOffset(tzB);
+  const timeDiff = Math.abs(offsetA - offsetB);
+
+  // If timezones are 12+ hours apart, incompatible (opposite sides of world)
+  if (timeDiff >= 12) {
+    return { compatible: false, score: -500 }; // Heavy penalty
+  }
+
+  // Same timezone = perfect
+  if (timeDiff === 0) {
+    return { compatible: true, score: 10 };
+  }
+
+  // Within 1-3 hours: check if availability windows can overlap
+  if (timeDiff <= 3) {
+    // Map availability to approximate hours
+    const availMap = {
+      '6am-10am': 8,
+      '10am-2pm': 12,
+      '2pm-6pm': 16,
+      '6pm-10pm': 20,
+      'late night (10pm+)': 23
+    };
+
+    const normAvailA = (availA || '').toLowerCase().trim();
+    const normAvailB = (availB || '').toLowerCase().trim();
+    const hourA = availMap[normAvailA] || 12;
+    const hourB = availMap[normAvailB] || 12;
+
+    // Adjust hourB to user A's timezone
+    const adjustedHourB = hourB - (offsetB - offsetA);
+
+    // Check if there's overlap potential (within 2 hours)
+    const hourDiff = Math.abs(hourA - adjustedHourB);
+    if (hourDiff <= 2) {
+      return { compatible: true, score: 8 }; // Close timezone + overlapping availability
+    } else {
+      return { compatible: true, score: 3 }; // Close timezone but different hours
+    }
+  }
+
+  // 4-11 hours apart: possible but difficult
+  if (timeDiff <= 11) {
+    return { compatible: true, score: 0 }; // No bonus, no penalty
+  }
+
+  return { compatible: false, score: -500 };
+}
+
+/**
  * Calculate match score between two users
  * @param {Object} userA - First user object
  * @param {Object} userB - Second user object
@@ -11,15 +85,15 @@
  */
 function calculateMatchScore(userA, userB) {
   const weights = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
-    availability: 100,
-    compPerMatch: 30,
-    preferredMode: 8,
-    primaryGoal: 6,
-    preferredFrequency: 6,
-    partnerPreference: 4,
-    sessionLength: 4,
-    timeZone: 3,
-    studyPersonality: 3
+    compPerMatch: 80,
+    availability: 30,
+    preferredMode: 15,
+    primaryGoal: 12,
+    preferredFrequency: 12,
+    partnerPreference: 10,
+    sessionLength: 10,
+    timeZone: 10,
+    studyPersonality: 10
   };
 
   // Normalize strings for comparison
@@ -36,10 +110,12 @@ function calculateMatchScore(userA, userB) {
   const bWeaknesses = normArr(userB.weaknesses);
 
   let score = 0;
+  let matchCount = 0; // Track total number of matching factors
 
   // 1. Availability match (highest priority - must align for scheduling)
   if (norm(userA.availability) && norm(userA.availability) === norm(userB.availability)) {
     score += weights.availability;
+    matchCount++;
   }
 
   // 2. Complementary strengths/weaknesses (core matching logic)
@@ -57,6 +133,8 @@ function calculateMatchScore(userA, userB) {
   const aStrugglingInWeaknesses = aQuizResults.strugglingInWeaknesses === true;
   const bStrugglingInWeaknesses = bQuizResults.strugglingInWeaknesses === true;
   
+  let complementaryMatches = 0;
+  
   // A's weaknesses that match B's strengths
   aWeaknesses.forEach(weakness => {
     if (bStrengths.includes(weakness)) {
@@ -69,6 +147,7 @@ function calculateMatchScore(userA, userB) {
       }
       
       score += matchScore;
+      complementaryMatches++;
     }
   });
 
@@ -84,36 +163,65 @@ function calculateMatchScore(userA, userB) {
       }
       
       score += matchScore;
+      complementaryMatches++;
     }
   });
+
+  // Note: Pairs with 0 complementary skills are filtered out in findBestMatch
+  // No need to penalize here since they won't be shown to users
 
   // 3. Other preference matches
   if (norm(userA.preferredMode) && norm(userA.preferredMode) === norm(userB.preferredMode)) {
     score += weights.preferredMode;
+    matchCount++;
   }
 
   if (norm(userA.primaryGoal) && norm(userA.primaryGoal) === norm(userB.primaryGoal)) {
     score += weights.primaryGoal;
+    matchCount++;
   }
 
   if (norm(userA.preferredFrequency) && norm(userA.preferredFrequency) === norm(userB.preferredFrequency)) {
     score += weights.preferredFrequency;
+    matchCount++;
   }
 
   if (norm(userA.partnerPreference) && norm(userA.partnerPreference) === norm(userB.partnerPreference)) {
     score += weights.partnerPreference;
+    matchCount++;
   }
 
   if (norm(userA.sessionLength) && norm(userA.sessionLength) === norm(userB.sessionLength)) {
     score += weights.sessionLength;
+    matchCount++;
   }
 
-  if (norm(userA.timeZone) && norm(userA.timeZone) === norm(userB.timeZone)) {
-    score += weights.timeZone;
+  // Timezone compatibility (intricate check with availability overlap)
+  const tzCompat = checkTimezoneCompatibility(
+    userA.timeZone,
+    userB.timeZone,
+    userA.availability,
+    userB.availability
+  );
+  if (tzCompat.compatible) {
+    score += tzCompat.score;
+    if (tzCompat.score > 0) {
+      matchCount++;
+    }
+  } else {
+    // Incompatible timezones (12+ hours apart)
+    score += tzCompat.score; // Apply -500 penalty
   }
 
   if (norm(userA.studyPersonality) && norm(userA.studyPersonality) === norm(userB.studyPersonality)) {
     score += weights.studyPersonality;
+    matchCount++;
+  }
+
+  // PENALTY: If only 1 factor matches out of all (9 total factors), subtract 50
+  // This prevents poor matches where users only share one thing in common
+  if (matchCount === 1) {
+    score -= 50;
   }
 
   return score;
@@ -127,15 +235,15 @@ function calculateMatchScore(userA, userB) {
  */
 function getScoreBreakdown(userA, userB) {
   const weights = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
-    availability: 100,
+    availability: 80,
     compPerMatch: 30,
-    preferredMode: 8,
-    primaryGoal: 6,
-    preferredFrequency: 6,
-    partnerPreference: 4,
-    sessionLength: 4,
-    timeZone: 3,
-    studyPersonality: 3
+    preferredMode: 15,
+    primaryGoal: 12,
+    preferredFrequency: 12,
+    partnerPreference: 10,
+    sessionLength: 10,
+    timeZone: 10,
+    studyPersonality: 10
   };
 
   const norm = (s) => (s || '').toString().toLowerCase().trim();
@@ -204,9 +312,24 @@ function getScoreBreakdown(userA, userB) {
     reasons.push(`✓ Same session length: ${userA.sessionLength} (+${weights.sessionLength})`);
   }
 
-  if (norm(userA.timeZone) && norm(userA.timeZone) === norm(userB.timeZone)) {
-    total += weights.timeZone;
-    reasons.push(`✓ Same timezone: ${userA.timeZone} (+${weights.timeZone})`);
+  // Timezone compatibility
+  const tzCompat = checkTimezoneCompatibility(
+    userA.timeZone,
+    userB.timeZone,
+    userA.availability,
+    userB.availability
+  );
+  if (tzCompat.compatible) {
+    if (tzCompat.score === 10) {
+      total += tzCompat.score;
+      reasons.push(`✓ Same timezone (+${tzCompat.score})`);
+    } else if (tzCompat.score > 0) {
+      total += tzCompat.score;
+      reasons.push(`✓ Compatible timezones with overlap (+${tzCompat.score})`);
+    }
+  } else {
+    total += tzCompat.score;
+    reasons.push(`✗ Incompatible timezones (12+ hours apart) (${tzCompat.score})`);
   }
 
   if (norm(userA.studyPersonality) && norm(userA.studyPersonality) === norm(userB.studyPersonality)) {
@@ -255,11 +378,17 @@ function findBestMatch(targetUser, candidates) {
     };
   });
 
-  // Sort by score (highest first)
-  scoredMatches.sort((a, b) => b.score - a.score);
+  // HARD REQUIREMENT: Filter out pairs with zero complementary skills
+  // Students can't help each other if they have no complementary strengths/weaknesses
+  const viableMatches = scoredMatches.filter(match => {
+    return match.breakdown && match.breakdown.complementaryCount > 0;
+  });
 
-  // Return top matches
-  return scoredMatches;
+  // Sort by score (highest first)
+  viableMatches.sort((a, b) => b.score - a.score);
+
+  // Return only viable matches (at least 1 complementary skill)
+  return viableMatches;
 }
 
 /**
@@ -291,13 +420,33 @@ function areUsersCompatible(userA, userB, minScore = 100) {
   return score >= minScore;
 }
 
+/**
+ * Get match quality badge based on score
+ * @param {number} score - Match score
+ * @returns {Object} Badge with text, color, and emoji
+ */
+function getMatchQualityBadge(score) {
+  if (score >= 150) {
+    return { text: 'Excellent Match', color: '#10b981', emoji: '🌟' };
+  } else if (score >= 120) {
+    return { text: 'Great Match', color: '#3b82f6', emoji: '✨' };
+  } else if (score >= 100) {
+    return { text: 'Good Match', color: '#8b5cf6', emoji: '👍' };
+  } else if (score >= 80) {
+    return { text: 'Fair Match', color: '#f59e0b', emoji: '🤝' };
+  } else {
+    return { text: 'Low Compatibility', color: '#ef4444', emoji: '⚠️' };
+  }
+}
+
 // Export functions to global scope
 window.Matching = {
   calculateMatchScore,
   getScoreBreakdown,
   findBestMatch,
   getTopMatches,
-  areUsersCompatible
+  areUsersCompatible,
+  getMatchQualityBadge
 };
 
 window.MatchingAlgorithm = window.Matching; // Alias for convenience

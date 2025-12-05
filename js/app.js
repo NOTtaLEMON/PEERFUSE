@@ -358,6 +358,9 @@ async function handleSaveProfile() {
   const mode = document.getElementById('profile-mode')?.value || '';
   const goal = document.getElementById('profile-goal')?.value || '';
   const frequency = document.getElementById('profile-frequency')?.value || '';
+  const sessionLength = document.getElementById('profile-session-length')?.value || '';
+  const partnerPreference = document.getElementById('profile-partner-preference')?.value || '';
+  const studyPersonality = document.getElementById('profile-study-personality')?.value || '';
   const timezone = document.getElementById('profile-timezone')?.value || '';
 
   const strengths = [strength1, strength2].filter(s => s.trim()).map(s => s.trim());
@@ -368,7 +371,7 @@ async function handleSaveProfile() {
     return;
   }
 
-  if (!availability || !mode || !goal || !frequency || !timezone) {
+  if (!availability || !mode || !goal || !frequency || !sessionLength || !partnerPreference || !studyPersonality || !timezone) {
     window.UI.showToast('Please fill in all required fields', 'error');
     return;
   }
@@ -383,6 +386,9 @@ async function handleSaveProfile() {
     preferredMode: mode,
     primaryGoal: goal,
     preferredFrequency: frequency,
+    sessionLength,
+    partnerPreference,
+    studyPersonality,
     timeZone: timezone
   };
 
@@ -489,11 +495,17 @@ async function handleFindMatch() {
 
     // Display best match with request button
     const bestMatch = matches[0];
+    const qualityBadge = window.Matching.getMatchQualityBadge(bestMatch.score);
     const resultDiv = document.getElementById('result');
     resultDiv.innerHTML = `
       <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
         <h3 style="margin: 0 0 8px 0; color: white;">Best Match Found!</h3>
-        <p style="font-size: 32px; font-weight: 700; margin: 8px 0; color: white;">${bestMatch.score} points</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
+          <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestMatch.score} points</p>
+          <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
+            ${qualityBadge.emoji} ${qualityBadge.text}
+          </span>
+        </div>
         <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
       </div>
       <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
@@ -1162,12 +1174,18 @@ async function loadUserProfile(username) {
       const modeEl = document.getElementById('profile-mode');
       const goalEl = document.getElementById('profile-goal');
       const frequencyEl = document.getElementById('profile-frequency');
+      const sessionLengthEl = document.getElementById('profile-session-length');
+      const partnerPreferenceEl = document.getElementById('profile-partner-preference');
+      const studyPersonalityEl = document.getElementById('profile-study-personality');
       const timezoneEl = document.getElementById('profile-timezone');
 
       if (availabilityEl && profile.availability) availabilityEl.value = profile.availability;
       if (modeEl && profile.preferredMode) modeEl.value = profile.preferredMode;
       if (goalEl && profile.primaryGoal) goalEl.value = profile.primaryGoal;
       if (frequencyEl && profile.preferredFrequency) frequencyEl.value = profile.preferredFrequency;
+      if (sessionLengthEl && profile.sessionLength) sessionLengthEl.value = profile.sessionLength;
+      if (partnerPreferenceEl && profile.partnerPreference) partnerPreferenceEl.value = profile.partnerPreference;
+      if (studyPersonalityEl && profile.studyPersonality) studyPersonalityEl.value = profile.studyPersonality;
       if (timezoneEl && profile.timeZone) timezoneEl.value = profile.timeZone;
       
       // Display pre-quiz results if available (check new field names)

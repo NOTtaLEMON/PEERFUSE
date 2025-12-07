@@ -50,8 +50,8 @@ if not GEMINI_API_KEY:
 
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash-exp')
-    logger.info("Gemini API configured successfully with model: gemini-2.0-flash-exp")
+    model = genai.GenerativeModel('models/gemini-2.5-flash')
+    logger.info("Gemini API configured successfully with model: models/gemini-2.5-flash")
 except Exception as e:
     logger.error(f"Failed to configure Gemini API: {str(e)}")
     raise
@@ -319,7 +319,7 @@ if __name__ == '__main__':
     logger.info("PeerFuse Backend Server - Production Mode")
     logger.info("=" * 50)
     logger.info(f"Gemini API: {'Configured' if GEMINI_API_KEY else 'NOT CONFIGURED'}")
-    logger.info("Model: gemini-2.0-flash-exp")
+    logger.info("Model: models/gemini-2.5-flash")
     logger.info("Server: http://127.0.0.1:5000")
     logger.info("Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz, /generate-presession-quiz")
     logger.info("=" * 50)

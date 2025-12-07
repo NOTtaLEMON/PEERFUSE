@@ -3,7 +3,7 @@
  * Handles backend API calls for AI-generated study materials
  */
 
-const BACKEND_URL = 'https://peerfuse-1.onrender.com';
+const BACKEND_URL = 'http://localhost:5000';
 let backendAvailable = false;
 
 /**

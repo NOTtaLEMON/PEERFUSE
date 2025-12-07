@@ -279,7 +279,14 @@ async function generateContent(type) {
 /**
  * Set up event listeners for AI tools
  */
+let listenersInitialized = false;
 function setupAIEventListeners() {
+  // Prevent duplicate event listeners
+  if (listenersInitialized) {
+    console.log('Event listeners already initialized, skipping...');
+    return;
+  }
+  
   console.log('=== Setting up AI event listeners ===');
   console.log('Current DOM state:', document.readyState);
   
@@ -315,6 +322,7 @@ function setupAIEventListeners() {
     }
   });
   
+  listenersInitialized = true;
   console.log('=== AI event listeners setup complete ===');
 }
 

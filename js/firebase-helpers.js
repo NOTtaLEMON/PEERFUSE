@@ -66,23 +66,52 @@ async function saveProfile(profile) {
     const existingDataSnapshot = await window.PEERFUSE_DB.ref('users/' + key).once('value');
     const existingData = existingDataSnapshot.val() || {};
     
-    // Merge profile data while preserving quiz results and other data
+    // Merge profile data - only include defined values
     const mergedData = {
       ...existingData,
-      ...normalized,
-      // Explicitly preserve quiz fields if they exist in existing data
-      preQuizScore: existingData.preQuizScore ?? normalized.preQuizScore,
-      preQuizCorrect: existingData.preQuizCorrect ?? normalized.preQuizCorrect,
-      preQuizTotal: existingData.preQuizTotal ?? normalized.preQuizTotal,
-      preQuizStrengthScore: existingData.preQuizStrengthScore ?? normalized.preQuizStrengthScore,
-      preQuizWeaknessScore: existingData.preQuizWeaknessScore ?? normalized.preQuizWeaknessScore,
-      preQuizStrugglingInStrengths: existingData.preQuizStrugglingInStrengths ?? normalized.preQuizStrugglingInStrengths,
-      preQuizStrugglingInWeaknesses: existingData.preQuizStrugglingInWeaknesses ?? normalized.preQuizStrugglingInWeaknesses,
-      preQuizTimestamp: existingData.preQuizTimestamp ?? normalized.preQuizTimestamp,
-      // Preserve other data
-      sessions: existingData.sessions || normalized.sessions,
-      matchRequests: existingData.matchRequests || normalized.matchRequests
+      ...normalized
     };
+    
+    // Remove any undefined values to prevent Firebase errors
+    Object.keys(mergedData).forEach(key => {
+      if (mergedData[key] === undefined) {
+        delete mergedData[key];
+      }
+    });
+    
+    // Only add quiz fields if they exist and are not undefined
+    if (existingData.preQuizScore !== undefined || normalized.preQuizScore !== undefined) {
+      const score = existingData.preQuizScore ?? normalized.preQuizScore;
+      if (score !== undefined) mergedData.preQuizScore = score;
+    }
+    if (existingData.preQuizCorrect !== undefined || normalized.preQuizCorrect !== undefined) {
+      const correct = existingData.preQuizCorrect ?? normalized.preQuizCorrect;
+      if (correct !== undefined) mergedData.preQuizCorrect = correct;
+    }
+    if (existingData.preQuizTotal !== undefined || normalized.preQuizTotal !== undefined) {
+      const total = existingData.preQuizTotal ?? normalized.preQuizTotal;
+      if (total !== undefined) mergedData.preQuizTotal = total;
+    }
+    if (existingData.preQuizStrengthScore !== undefined || normalized.preQuizStrengthScore !== undefined) {
+      const strengthScore = existingData.preQuizStrengthScore ?? normalized.preQuizStrengthScore;
+      if (strengthScore !== undefined) mergedData.preQuizStrengthScore = strengthScore;
+    }
+    if (existingData.preQuizWeaknessScore !== undefined || normalized.preQuizWeaknessScore !== undefined) {
+      const weaknessScore = existingData.preQuizWeaknessScore ?? normalized.preQuizWeaknessScore;
+      if (weaknessScore !== undefined) mergedData.preQuizWeaknessScore = weaknessScore;
+    }
+    if (existingData.preQuizStrugglingInStrengths !== undefined || normalized.preQuizStrugglingInStrengths !== undefined) {
+      const struggling = existingData.preQuizStrugglingInStrengths ?? normalized.preQuizStrugglingInStrengths;
+      if (struggling !== undefined) mergedData.preQuizStrugglingInStrengths = struggling;
+    }
+    if (existingData.preQuizStrugglingInWeaknesses !== undefined || normalized.preQuizStrugglingInWeaknesses !== undefined) {
+      const struggling = existingData.preQuizStrugglingInWeaknesses ?? normalized.preQuizStrugglingInWeaknesses;
+      if (struggling !== undefined) mergedData.preQuizStrugglingInWeaknesses = struggling;
+    }
+    if (existingData.preQuizTimestamp !== undefined || normalized.preQuizTimestamp !== undefined) {
+      const timestamp = existingData.preQuizTimestamp ?? normalized.preQuizTimestamp;
+      if (timestamp !== undefined) mergedData.preQuizTimestamp = timestamp;
+    }
     
     // Save to both profiles/ and users/ paths for compatibility
     await Promise.all([

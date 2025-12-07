@@ -25,15 +25,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enable CORS for all routes - allow GitHub Pages and Render
+# Enable CORS for all routes - allow all origins temporarily for debugging
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "https://nottalemon.github.io",
-            "https://peerfuse-1.onrender.com",
-            "http://localhost:*",
-            "http://127.0.0.1:*"
-        ],
+        "origins": "*",
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }

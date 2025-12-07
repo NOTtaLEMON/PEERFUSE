@@ -25,8 +25,19 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enable CORS for all routes - simple and production-ready
-CORS(app)
+# Enable CORS for all routes - allow GitHub Pages and Render
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://nottalemon.github.io",
+            "https://peerfuse-1.onrender.com",
+            "http://localhost:*",
+            "http://127.0.0.1:*"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Configure Gemini AI with validation
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')

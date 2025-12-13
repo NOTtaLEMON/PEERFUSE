@@ -32,7 +32,8 @@ git push origin main
 
 ### 3. Configure Environment Variables
 In Render Dashboard → Environment:
-- **GEMINI_API_KEY**: `AIzaSyB_ldg56Xx0cUrD9QYJaU8fszyvC6QkaRY`
+- **GEMINI_API_KEY**: Get new key from https://aistudio.google.com/app/apikey
+  ⚠️ **CRITICAL: NEVER commit this key to Git - set it ONLY in Render dashboard**
 - **FLASK_ENV**: `production` (auto-set from render.yaml)
 - **WEB_CONCURRENCY**: `1` (auto-set from render.yaml)
 

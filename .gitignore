@@ -2,10 +2,16 @@
 
 # Environment variables and secrets
 .env
+.env.*
 .env.local
 .env.*.local
 config.local.js
 secrets.js
+*.key
+*.pem
+*credentials*
+*secret*
+*API_KEY*
 
 # API Keys (if you create separate key files)
 **/api-keys.js

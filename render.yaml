@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: peerfuse-backend
+    runtime: python
+    region: oregon  # Choose closest region to reduce latency
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50 app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: FLASK_ENV
+        value: production
+      - key: WEB_CONCURRENCY
+        value: 1  # Single worker to minimize memory usage
+    healthCheckPath: /health

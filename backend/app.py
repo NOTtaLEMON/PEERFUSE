@@ -45,11 +45,16 @@ if not GEMINI_API_KEY:
 
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('models/gemini-2.5-flash')
-    logger.info("Gemini API configured successfully with model: models/gemini-2.5-flash")
+    # Lazy loading: Model initialized on first request to save memory
+    model = None
+    logger.info("Gemini API configured successfully - model will initialize on first request")
 except Exception as e:
     logger.error(f"Failed to configure Gemini API: {str(e)}")
     raise
+
+# Simple in-memory cache to reduce API calls (cleared on restart)
+request_cache = {}
+MAX_CACHE_SIZE = 50  # Limit cache to save memory
 
 
 @app.route('/', methods=['GET'])
@@ -68,13 +73,37 @@ def root():
     }), 200
 
 
+def get_model():
+    """
+    Lazy load the Gemini model to save memory on startup
+    """
+    global model
+    if model is None:
+        model = genai.GenerativeModel(
+            'models/gemini-2.5-flash',
+            generation_config={
+                'temperature': 0.7,
+                'max_output_tokens': 2048,  # Limit response size
+            }
+        )
+        logger.info("Gemini model initialized")
+    return model
+
 def safe_generate_content(prompt, max_retries=3):
     """
     Safely generate content with retry logic for rate limits
+    Includes basic caching to reduce API calls
     """
+    # Check cache first
+    cache_key = hash(prompt)
+    if cache_key in request_cache:
+        logger.info("Returning cached response")
+        return request_cache[cache_key]
+    
     for attempt in range(max_retries):
         try:
-            response = model.generate_content(prompt)
+            m = get_model()
+            response = m.generate_content(prompt)
             
             # Check if response has text
             if not hasattr(response, 'text') or not response.text:
@@ -87,6 +116,15 @@ def safe_generate_content(prompt, max_retries=3):
                             self.text = txt
                     return ResponseWrapper(text)
                 raise Exception("Empty response from Gemini API")
+            
+            # Cache successful response (with size limit)
+            if len(request_cache) < MAX_CACHE_SIZE:
+                request_cache[cache_key] = response
+            elif len(request_cache) >= MAX_CACHE_SIZE:
+                # Clear oldest entries
+                request_cache.clear()
+                request_cache[cache_key] = response
+                logger.info("Cache cleared to save memory")
             
             return response
         except Exception as e:

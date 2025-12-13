@@ -1,5 +1,6 @@
-flask>=3.0.0
-flask-cors>=4.0.0
-google-generativeai>=0.3.0
-python-dotenv>=1.0.0
-gunicorn>=21.2.0  # Production WSGI server (not needed on Windows, use Flask's built-in)
+# Optimized for Render free tier (512MB RAM)
+flask==3.0.0
+flask-cors==4.0.1
+google-generativeai==0.3.2
+python-dotenv==1.0.0
+gunicorn==21.2.0

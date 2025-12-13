@@ -3,7 +3,8 @@
  * Handles backend API calls for AI-generated study materials
  */
 
-const BACKEND_URL = 'http://localhost:5000';
+// Use Render deployment URL - update this after deploying to Render
+const BACKEND_URL = 'https://peerfuse-backend.onrender.com';
 let backendAvailable = false;
 
 /**

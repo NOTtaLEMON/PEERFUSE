@@ -77,6 +77,19 @@ function checkTimezoneCompatibility(tzA, tzB, availA, availB) {
   return { compatible: false, score: -500 };
 }
 
+// Unified matching weights (skills-first configuration)
+const MATCHING_WEIGHTS = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
+  compPerMatch: 80,
+  availability: 30,
+  preferredMode: 15,
+  primaryGoal: 12,
+  preferredFrequency: 12,
+  partnerPreference: 10,
+  sessionLength: 10,
+  timeZone: 10,
+  studyPersonality: 10
+};
+
 /**
  * Calculate match score between two users
  * @param {Object} userA - First user object
@@ -84,17 +97,7 @@ function checkTimezoneCompatibility(tzA, tzB, availA, availB) {
  * @returns {number} Match score
  */
 function calculateMatchScore(userA, userB) {
-  const weights = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
-    compPerMatch: 80,
-    availability: 30,
-    preferredMode: 15,
-    primaryGoal: 12,
-    preferredFrequency: 12,
-    partnerPreference: 10,
-    sessionLength: 10,
-    timeZone: 10,
-    studyPersonality: 10
-  };
+  const weights = MATCHING_WEIGHTS;
 
   // Normalize strings for comparison
   const norm = (s) => (s || '').toString().toLowerCase().trim();
@@ -234,17 +237,7 @@ function calculateMatchScore(userA, userB) {
  * @returns {Object} Score details with reasons
  */
 function getScoreBreakdown(userA, userB) {
-  const weights = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
-    availability: 80,
-    compPerMatch: 30,
-    preferredMode: 15,
-    primaryGoal: 12,
-    preferredFrequency: 12,
-    partnerPreference: 10,
-    sessionLength: 10,
-    timeZone: 10,
-    studyPersonality: 10
-  };
+  const weights = MATCHING_WEIGHTS;
 
   const norm = (s) => (s || '').toString().toLowerCase().trim();
   const normArr = (arr) => (

@@ -234,8 +234,17 @@ function renderMatchResult(match, containerId) {
       </div>
       <div style="margin-top: 16px; display: flex; gap: 10px;">
         <button onclick="startSession('${escapeHtml(user.name || user.username)}')">Start Session</button>
-        <button onclick="showNextMatch()" class="btn-secondary">Show Next Match</button>
+        <button onclick="showNextMatch()" class="btn-secondary">Next Best Buddy</button>
+        <button onclick="quitCurrentMatch()" class="btn-danger">Quit Match</button>
       </div>
+    // Quit current match handler
+    function quitCurrentMatch() {
+      // Optionally, you can clear the match result or show a message
+      const container = document.getElementById('match-result-container');
+      if (container) {
+        container.innerHTML = '<p class="text-muted">You have quit the current match. Please try matching again or choose another buddy.</p>';
+      }
+    }
     </div>
   `;
 

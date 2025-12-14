@@ -839,24 +839,23 @@ function displayPreQuizQuestions(quizContent) {
  */
 function parseQuizContent(content) {
   const questions = [];
-  const questionBlocks = content.split(/\*\*Question \d+/).filter(b => b.trim());
+  
+  // Split by "Question" followed by a number (handles both **Question and plain Question)
+  const questionBlocks = content.split(/(?:^|\n)\*?\*?Question\s+\d+/i).filter(b => b.trim());
   
   questionBlocks.forEach((block, blockIndex) => {
-    const lines = block.split('\n').filter(l => l.trim());
+    const lines = block.split('\n').map(l => l.trim()).filter(l => l);
     
-    // Extract difficulty - try multiple patterns
+    if (lines.length < 5) return; // Need at least question + 4 options
+    
+    // Extract difficulty from bracket notation like [STRENGTH - HARD]
     let difficulty = '';
-    const difficultyMatch1 = block.match(/\[(STRENGTH|WEAKNESS)\s*-\s*(EASY|MEDIUM|HARD)\]/i);
-    const difficultyMatch2 = block.match(/\[([^\]]+)\]/); // Any text in brackets
+    const difficultyMatch = block.match(/\[(STRENGTH|WEAKNESS)\s*(?:-\s*(EASY|MEDIUM|HARD))?\]/i);
     
-    if (difficultyMatch1) {
-      difficulty = difficultyMatch1[0];
-    } else if (difficultyMatch2) {
-      difficulty = difficultyMatch2[0];
-    }
-    
-    // Try to determine from position (questions 1-10 are strengths, 11-20 are weaknesses)
-    if (!difficulty.toUpperCase().includes('STRENGTH') && !difficulty.toUpperCase().includes('WEAKNESS')) {
+    if (difficultyMatch) {
+      difficulty = difficultyMatch[0];
+    } else {
+      // Fallback: determine based on question number position
       if (blockIndex < 10) {
         difficulty = '[STRENGTH]';
       } else {
@@ -864,35 +863,55 @@ function parseQuizContent(content) {
       }
     }
     
-    console.log(`Block ${blockIndex + 1} difficulty:`, difficulty);
-    
-    // Extract question text (first non-empty line after difficulty)
+    // Extract question text (first non-empty, non-bracket line)
     let questionText = '';
-    let options = [];
-    let correctAnswer = '';
-    
+    let questionLineIndex = 0;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      
-      if (!questionText && line && !line.includes('[') && !line.startsWith('**')) {
+      const line = lines[i];
+      if (line && !line.includes('[') && !line.toUpperCase().includes('STRENGTH') && !line.toUpperCase().includes('WEAKNESS')) {
         questionText = line;
-      } else if (line.match(/^[A-D]\)/)) {
-        options.push(line);
-      } else if (line.includes('Correct Answer:')) {
-        correctAnswer = line.match(/[A-D]/)?.[0] || '';
+        questionLineIndex = i;
+        break;
       }
     }
     
+    if (!questionText) return;
+    
+    // Extract answer options (lines starting with A), B), C), D))
+    let options = [];
+    let correctAnswer = '';
+    let explanation = '';
+    
+    for (let i = questionLineIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Match options like "A) text" or "A) text"
+      if (line.match(/^[A-D]\)/)) {
+        options.push(line);
+      } else if (line.toUpperCase().includes('CORRECT ANSWER')) {
+        // Extract letter from "Correct Answer: B"
+        const match = line.match(/[A-D]/);
+        if (match) correctAnswer = match[0];
+      } else if (line.toUpperCase().includes('EXPLANATION')) {
+        // Extract explanation text
+        const match = line.match(/EXPLANATION\s*:?\s*(.+)/i);
+        if (match) explanation = match[1];
+      }
+    }
+    
+    // Only add if we have question and all 4 options
     if (questionText && options.length === 4) {
       questions.push({
         question: questionText,
         difficulty,
         options,
-        correctAnswer
+        correctAnswer,
+        explanation
       });
     }
   });
   
+  console.log(`Parsed ${questions.length} questions from quiz content`);
   return questions;
 }
 

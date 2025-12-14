@@ -280,7 +280,7 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
         
-          prompt = f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:
+                prompt = f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:
 
 **Strengths:** {strengths_text}
 **Weaknesses:** {weaknesses_text}

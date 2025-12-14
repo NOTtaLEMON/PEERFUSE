@@ -966,7 +966,10 @@ function parseQuizContent(content) {
 
   blocks.forEach((block, blockIndex) => {
     const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-    if (lines.length === 0) return;
+    if (lines.length === 0) {
+      console.log(`⚠️ Block ${blockIndex + 1}: Empty block, skipping`);
+      return;
+    }
 
     // Extract difficulty from bracket notation like [STRENGTH - HARD]
     let difficulty = '';
@@ -991,7 +994,10 @@ function parseQuizContent(content) {
       break;
     }
 
-    if (!questionText) return;
+    if (!questionText) {
+      console.log(`⚠️ Block ${blockIndex + 1}: No question text found`);
+      return;
+    }
 
     // Extract answer options (accept formats like "A) ...", "A. ...", "A)" with or without spaces)
     const options = [];
@@ -1041,6 +1047,9 @@ function parseQuizContent(content) {
         correctAnswer,
         explanation
       });
+      console.log(`✅ Block ${blockIndex + 1}: Successfully parsed question`);
+    } else {
+      console.log(`⚠️ Block ${blockIndex + 1}: Insufficient data (text: ${!!questionText}, options: ${options.length})`);
     }
   });
 

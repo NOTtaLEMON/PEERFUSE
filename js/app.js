@@ -1498,6 +1498,16 @@ function showSection(sectionId) {
 }
 
 /**
+ * Scroll to the matching section
+ */
+function scrollToMatching() {
+  const matchSection = document.getElementById('match-section');
+  if (matchSection) {
+    matchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/**
  * Start new search - reset state and find fresh matches
  */
 async function startNewSearch() {

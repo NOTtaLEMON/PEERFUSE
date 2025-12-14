@@ -147,12 +147,6 @@ function setupEventListeners() {
     findMatchBtn.addEventListener('click', handleFindMatch);
   }
 
-  // Quiz form handlers
-  const prequizForm = document.getElementById('prequiz-form');
-  if (prequizForm) {
-    prequizForm.addEventListener('submit', handlePreQuizSubmit);
-  }
-
   // Pre-session quiz button
   const startPrequizBtn = document.getElementById('start-prequiz-btn');
   if (startPrequizBtn) {
@@ -700,23 +694,10 @@ function endSession(peerName) {
  * @param {Event} e - Submit event
  */
 function handlePreQuizSubmit(e) {
-  e.preventDefault();
-
-  const formData = window.UI.getFormData('prequiz-form');
-  
-  console.log('Pre-quiz submitted:', formData);
-  
-  // Save to Firebase
-  if (window.FirebaseHelpers) {
-    window.FirebaseHelpers.saveQuizResults({
-      type: 'pre-quiz',
-      user: window.Auth.LocalStorage.getCurrentUser(),
-      responses: formData
-    });
-  }
-
-  window.UI.showStatus('prequiz-status', 'Pre-quiz submitted! You can now find a match.', 'success');
-  window.UI.showToast('Pre-quiz completed!', 'success');
+  // This function is deprecated and no longer used
+  // The quiz uses handleSubmitPreQuiz which properly handles radio button selections
+  console.warn('handlePreQuizSubmit called but deprecated. Using handleSubmitPreQuiz instead.');
+  handleSubmitPreQuiz();
 }
 
 /**

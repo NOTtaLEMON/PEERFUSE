@@ -23,11 +23,16 @@
   
   /* Neutral Colors - Warm undertones */
   --muted: #6B7A60;             /* Sage gray */
-  --text-dark: #000000;         /* Black text for light backgrounds */
-  --text-light: #1A1A1A;        /* Almost black */
-  --text-lighter: #333333;      /* Dark gray */
+  --text-dark: #2D3826;         /* Dark green for light backgrounds */
+  --text-light: #3D4832;        /* Medium dark green */
+  --text-lighter: #4A5A3E;      /* Lighter dark green */
   --border: #D4DBC8;            /* Soft sage border */
   --border-dark: #B8C4A8;       /* Deeper sage */
+  
+  /* Text colors for specific contexts */
+  --text-on-light: #2D3826;     /* Dark green text for light backgrounds */
+  --text-on-dark: #F5FBF0;      /* Light green/white for dark backgrounds */
+  --text-on-accent: #1C2814;    /* Very dark green for light accent buttons */
   
   /* Background Colors - Soft matcha cream */
   --card-bg: #F8FAF4;           /* Soft green-white */
@@ -68,35 +73,45 @@
 /* Dark Mode - Evening Zen Lounge */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text-dark: #FFFFFF;        /* White text for dark backgrounds */
-    --text-light: #FFFFFF;       /* White */
-    --text-lighter: #EEEEEE;     /* Light gray */
+    --text-dark: #E8F5DC;        /* Light green text for dark backgrounds */
+    --text-light: #D4E8C4;       /* Lighter green */
+    --text-lighter: #B8D4A8;     /* Medium light green */
     --card-bg: #1A2410;          /* Dark forest card */
     --page-bg: linear-gradient(165deg, #0F1608 0%, #14180C 50%, #1A2410 100%);
     --input-bg: #283820;         /* Lighter for better contrast */
     --hover-bg: #2F4528;         /* Visible hover state */
     --border: #6A7A5E;           /* Much lighter borders */
     --border-dark: #4A5A3E;
-    --primary: #F5FF90;          /* Very bright lime */
-    --primary-light: #FFFFE0;
-    --accent: #FFFFE0;
+    --primary: #5A7A42;          /* Medium forest green for dark mode buttons */
+    --primary-light: #6B8C54;
+    --accent: #DBD564;           /* Keep accent bright */
+    
+    /* Text colors for dark mode contexts */
+    --text-on-light: #2D3826;    /* Dark green for light buttons/cards */
+    --text-on-dark: #E8F5DC;     /* Light green for dark backgrounds */
+    --text-on-accent: #1C2814;   /* Very dark green for accent buttons */
   }
 }
 
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
-  --text-dark: #FFFFFF;          /* White text for dark backgrounds */
-  --text-light: #FFFFFF;         /* White */
-  --text-lighter: #EEEEEE;       /* Light gray */
+  --text-dark: #E8F5DC;          /* Light green text for dark backgrounds */
+  --text-light: #D4E8C4;         /* Lighter green */
+  --text-lighter: #B8D4A8;       /* Medium light green */
   --card-bg: #1A2410;            /* Dark forest card */
   --page-bg: linear-gradient(165deg, #0F1608 0%, #14180C 50%, #1A2410 100%);
   --input-bg: #283820;           /* Lighter for better contrast */
   --hover-bg: #2F4528;           /* Visible hover state */
   --border: #6A7A5E;             /* Much lighter borders */
   --border-dark: #4A5A3E;
-  --primary: #F5FF90;            /* Very bright lime */
-  --primary-light: #FFFFE0;
-  --accent: #FFFFE0;
+  --primary: #5A7A42;            /* Medium forest green for dark mode buttons */
+  --primary-light: #6B8C54;
+  --accent: #DBD564;             /* Keep accent bright */
+  
+  /* Text colors for dark mode contexts */
+  --text-on-light: #2D3826;      /* Dark green for light buttons/cards */
+  --text-on-dark: #E8F5DC;       /* Light green for dark backgrounds */
+  --text-on-accent: #1C2814;     /* Very dark green for accent buttons */
 }
 
 /* ================================

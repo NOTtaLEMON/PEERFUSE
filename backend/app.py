@@ -260,46 +260,47 @@ def generate_content():
 @app.route('/generate-presession-quiz', methods=['POST', 'OPTIONS'])
 def generate_presession_quiz():
     """Generate personalized pre-session quiz with robust error handling"""
-    # Handle preflight CORS requests
     if request.method == 'OPTIONS':
         return '', 200
-    
+
     try:
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
-            
+
         strengths = data.get('strengths', [])
         weaknesses = data.get('weaknesses', [])
-        
+
         if not strengths and not weaknesses:
             return jsonify({'error': 'Strengths and weaknesses are required'}), 400
-        
-        logger.info(f"Generating pre-session quiz (strengths: {len(strengths)}, weaknesses: {len(weaknesses)})")
-        
+
+        logger.info(
+            f"Generating pre-session quiz (strengths: {len(strengths)}, weaknesses: {len(weaknesses)})"
+        )
+
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
-        
-        prompt = (
-                f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:\n"
-                f"""
+
+        prompt = f"""
+Generate a 5-question multiple choice assessment quiz for a student with the following profile:
+
 Strengths: {strengths_text}
 Weaknesses: {weaknesses_text}
 
-Create exactly 5 multiple choice questions following these rules:
+Create exactly 10 multiple choice questions following these rules:
 
-1. Questions 1-3: Focus on their STRENGTHS ({strengths_text})
+1. Questions 1-5: Focus on their STRENGTHS ({strengths_text})
     - Make these moderately challenging to hard (they should know this well)
     - Test deeper understanding, not just memorization
     - Mix difficulty: 1 medium, 2 hard questions
 
-2. Questions 4-5: Focus on their WEAKNESSES ({weaknesses_text})
+2. Questions 6-10: Focus on their WEAKNESSES ({weaknesses_text})
     - Make these easier to medium difficulty (they're still learning)
     - Test fundamental concepts and basics
     - Mix difficulty: 1 easy, 1 medium question
 
 For EACH question, provide:
-- Question number (1-5)
+- Question number (1-10)
 - The question text
 - 4 answer options labeled A, B, C, D
 - Indicate the correct answer
@@ -318,54 +319,27 @@ Explanation: Brief explanation here.
 
 ---
 
-Make questions specific, practical, and relevant to each topic. Ensure variety in question types (conceptual, application, problem-solving)."""
-          )
+Make questions specific, practical, and relevant to each topic.
+Ensure variety in question types (conceptual, application, problem-solving).
+"""
 
-2. **Questions 4-5:** Focus on their WEAKNESSES ({weaknesses_text})
-    - Make these easier to medium difficulty (they're still learning)
-    - Test fundamental concepts and basics
-    - Mix difficulty: 1 easy, 1 medium question
-
-For EACH question, provide:
-- Question number (1-5)
-- The question text
-- 4 answer options labeled A, B, C, D
-- Indicate the correct answer
-- Brief explanation of why it's correct
-
-Format each question EXACTLY like this:
-
-**Question 1 [STRENGTH - HARD]**
-Question text here?
-A) Option 1
-B) Option 2
-C) Option 3
-D) Option 4
-**Correct Answer: B**
-Explanation: Brief explanation here.
-
----
-
-Make questions specific, practical, and relevant to each topic. Ensure variety in question types (conceptual, application, problem-solving)."""
-        
         response = safe_generate_content(prompt)
-        
-        # Safely extract text
         response_text = response.text if hasattr(response, 'text') else str(response)
-        
+
         logger.info("Successfully generated pre-session quiz")
         return jsonify({
             'success': True,
             'content': response_text
         }), 200
-        
+
     except Exception as e:
-        logger.error(f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}")
+        logger.error(
+            f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}"
+        )
         return jsonify({
             'success': False,
             'error': f'Failed to generate quiz: {str(e)}'
         }), 500
-
 
 if __name__ == '__main__':
     import sys

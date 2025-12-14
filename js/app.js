@@ -523,9 +523,9 @@ async function handleFindMatch() {
         </div>
         <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
       </div>
-      <div style="padding: 20px; background: rgba(var(--primary-rgb), 0.15); border-radius: var(--radius); margin-bottom: 16px; border: 1px solid rgba(var(--primary-rgb), 0.25);">
-        <h4 style="color: var(--text-on-dark); margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-        <ul style="line-height: 1.8; color: var(--text-on-dark);">
+      <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
+        <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
+        <ul style="line-height: 1.8; color: #D4F5C8;">
           ${bestMatch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
         </ul>
       </div>
@@ -612,9 +612,9 @@ function showNextMatch() {
       </div>
       <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
     </div>
-    <div style="padding: 20px; background: rgba(var(--primary-rgb), 0.15); border-radius: var(--radius); margin-bottom: 16px; border: 1px solid rgba(var(--primary-rgb), 0.25);">
-      <h4 style="color: var(--text-on-dark); margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-      <ul style="line-height: 1.8; color: var(--text-on-dark);">
+    <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
+      <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
+      <ul style="line-height: 1.8; color: #D4F5C8;">
         ${match.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
       </ul>
     </div>
@@ -1744,9 +1744,9 @@ async function handleRematchRequest(currentMatch) {
         </div>
         <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
       </div>
-      <div style="padding: 20px; background: rgba(var(--primary-rgb), 0.15); border-radius: var(--radius); margin-bottom: 16px; border: 1px solid rgba(var(--primary-rgb), 0.25);">
-        <h4 style="color: var(--text-on-dark); margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-        <ul style="line-height: 1.8; color: var(--text-on-dark);">
+      <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
+        <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
+        <ul style="line-height: 1.8; color: #D4F5C8;">
           ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
         </ul>
       </div>

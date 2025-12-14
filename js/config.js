@@ -29,7 +29,7 @@ const geminiConfig = {
 const appConfig = {
   // Matching algorithm weights
   matchingWeights: {
-    compPerMatch: 80,       // Complementary skill matching
+    compPerMatch: 40,       // Complementary skill matching (40 points each, max 80 total)
     availability: 30,       // Availability overlap
     preferredMode: 15,      // Preferred study mode
     primaryGoal: 12,        // Primary academic goal

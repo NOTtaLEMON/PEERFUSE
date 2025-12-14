@@ -137,11 +137,13 @@ function calculateMatchScore(userA, userB) {
   const bStrugglingInWeaknesses = bQuizResults.strugglingInWeaknesses === true;
   
   let complementaryMatches = 0;
+  let complementaryScore = 0;
+  const MAX_COMPLEMENTARY_SCORE = 80; // Maximum 80 points for complementary skills
   
   // A's weaknesses that match B's strengths
   aWeaknesses.forEach(weakness => {
-    if (bStrengths.includes(weakness)) {
-      let matchScore = weights.compPerMatch;
+    if (bStrengths.includes(weakness) && complementaryScore < MAX_COMPLEMENTARY_SCORE) {
+      let matchScore = weights.compPerMatch; // 40 points per match
       
       // If A is struggling in weaknesses AND B is struggling in their strengths,
       // they're at similar levels - good for peer learning
@@ -149,15 +151,18 @@ function calculateMatchScore(userA, userB) {
         matchScore *= 1.2; // 20% bonus for similar skill levels
       }
       
-      score += matchScore;
+      // Cap the total at MAX_COMPLEMENTARY_SCORE
+      const scoreToAdd = Math.min(matchScore, MAX_COMPLEMENTARY_SCORE - complementaryScore);
+      complementaryScore += scoreToAdd;
+      score += scoreToAdd;
       complementaryMatches++;
     }
   });
 
   // B's weaknesses that match A's strengths
   bWeaknesses.forEach(weakness => {
-    if (aStrengths.includes(weakness)) {
-      let matchScore = weights.compPerMatch;
+    if (aStrengths.includes(weakness) && complementaryScore < MAX_COMPLEMENTARY_SCORE) {
+      let matchScore = weights.compPerMatch; // 40 points per match
       
       // If B is struggling in weaknesses AND A is struggling in their strengths,
       // they're at similar levels - good for peer learning
@@ -165,7 +170,10 @@ function calculateMatchScore(userA, userB) {
         matchScore *= 1.2; // 20% bonus for similar skill levels
       }
       
-      score += matchScore;
+      // Cap the total at MAX_COMPLEMENTARY_SCORE
+      const scoreToAdd = Math.min(matchScore, MAX_COMPLEMENTARY_SCORE - complementaryScore);
+      complementaryScore += scoreToAdd;
+      score += scoreToAdd;
       complementaryMatches++;
     }
   });

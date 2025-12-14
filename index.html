@@ -19,6 +19,9 @@
     <p>Link up with study buddies who complement your learning strengths and weaknesses</p>
     <div class="user-bar" id="user-bar">
       <span id="user-welcome">Not signed in</span>
+      <button id="theme-toggle" class="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <span class="theme-icon">🌙</span>
+      </button>
       <button id="notifications-btn" class="hidden" style="position: relative; margin-right: 12px;">
         🔔
         <span id="notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--error); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">1</span>
@@ -678,6 +681,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Theme Manager (Load first!) -->
+  <script src="js/theme.js"></script>
 
   <!-- PeerFuse JavaScript Modules (load in order) -->
   <script src="js/config.js"></script>

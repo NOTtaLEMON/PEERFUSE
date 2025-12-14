@@ -4,7 +4,7 @@ Flask server to handle Gemini AI requests securely
 Production-ready with proper error handling and logging
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import google.generativeai as genai
 import os
@@ -267,7 +267,11 @@ def generate_content():
 def generate_presession_quiz():
     """Generate personalized pre-session quiz with robust error handling"""
     if request.method == 'OPTIONS':
-        return '', 200
+        response = make_response('', 200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
 
     try:
         data = request.get_json()

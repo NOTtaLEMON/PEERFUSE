@@ -350,18 +350,31 @@ function getScoreBreakdown(userA, userB) {
  * Find the best match for a target user from a list of candidates
  * @param {Object} targetUser - User to find match for
  * @param {Array} candidates - Array of potential matches
+ * @param {Array} excludedIds - Optional array of user IDs to exclude
  * @returns {Object|null} Best match with score details
  */
-function findBestMatch(targetUser, candidates) {
+function findBestMatch(targetUser, candidates, excludedIds = []) {
   if (!candidates || candidates.length === 0) {
     return null;
   }
 
-  // Don't match user with themselves
+  // Don't match user with themselves and exclude specified IDs
   const validCandidates = candidates.filter(candidate => {
     const candidateName = (candidate.name || candidate.username || '').toLowerCase().trim();
     const targetName = (targetUser.name || targetUser.username || '').toLowerCase().trim();
-    return candidateName !== targetName;
+    const candidateId = candidate.id || candidate.username;
+    
+    // Exclude if it's the same user
+    if (candidateName === targetName) {
+      return false;
+    }
+    
+    // Exclude if in rejected list
+    if (excludedIds.includes(candidateId)) {
+      return false;
+    }
+    
+    return true;
   });
 
   if (validCandidates.length === 0) {
@@ -394,14 +407,46 @@ function findBestMatch(targetUser, candidates) {
 }
 
 /**
+ * Find alternative matches excluding previously rejected ones
+ * @param {Object} targetUser - User to find match for
+ * @param {Array} candidates - Array of potential matches
+ * @param {Array|string} rejectedIds - Array of rejected user IDs or single ID
+ * @param {number} limit - Maximum number of matches to return
+ * @returns {Object} {matches: Array, status: string, message: string}
+ */
+function findRematch(targetUser, candidates, rejectedIds = [], limit = 10) {
+  // Normalize rejectedIds to array
+  const excludedIds = Array.isArray(rejectedIds) ? rejectedIds : (rejectedIds ? [rejectedIds] : []);
+  
+  // Get matches excluding rejected IDs
+  const allMatches = findBestMatch(targetUser, candidates, excludedIds);
+  
+  if (!allMatches || allMatches.length === 0) {
+    return {
+      matches: [],
+      status: 'no_matches',
+      message: 'No alternative matches available. You\'ve reviewed all compatible users!'
+    };
+  }
+  
+  const topMatches = allMatches.slice(0, limit);
+  return {
+    matches: topMatches,
+    status: 'success',
+    message: `Found ${topMatches.length} alternative match(es)`
+  };
+}
+
+/**
  * Get top N matches
  * @param {Object} targetUser - User to find matches for
  * @param {Array} candidates - Array of potential matches
  * @param {number} limit - Maximum number of matches to return
+ * @param {Array} excludedIds - Optional array of user IDs to exclude
  * @returns {Array} Top N matches
  */
-function getTopMatches(targetUser, candidates, limit = 10) {
-  const allMatches = findBestMatch(targetUser, candidates);
+function getTopMatches(targetUser, candidates, limit = 10, excludedIds = []) {
+  const allMatches = findBestMatch(targetUser, candidates, excludedIds);
   
   if (!allMatches) {
     return [];
@@ -446,6 +491,7 @@ window.Matching = {
   calculateMatchScore,
   getScoreBreakdown,
   findBestMatch,
+  findRematch,
   getTopMatches,
   areUsersCompatible,
   getMatchQualityBadge

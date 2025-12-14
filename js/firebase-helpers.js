@@ -352,6 +352,85 @@ async function saveMatch(matchData) {
   }
 }
 
+/**
+ * Mark a match as rejected and track it
+ * @param {string} userId - Current user ID
+ * @param {string} rejectedUserId - ID of rejected match
+ * @returns {Promise<boolean>} Success status
+ */
+async function rejectMatch(userId, rejectedUserId) {
+  if (!window.PEERFUSE_DB) {
+    console.warn('Firebase not initialized');
+    return false;
+  }
+  
+  try {
+    const userRef = window.PEERFUSE_DB.ref(`profiles/${userId}`);
+    const snapshot = await userRef.once('value');
+    const userData = snapshot.val();
+    
+    // Initialize or update rejected_match_ids array
+    const rejectedIds = userData?.rejected_match_ids || [];
+    if (!rejectedIds.includes(rejectedUserId)) {
+      rejectedIds.push(rejectedUserId);
+    }
+    
+    await userRef.update({
+      rejected_match_ids: rejectedIds,
+      last_match_rejection: Date.now()
+    });
+    
+    console.log('✅ Match rejected and tracked:', rejectedUserId);
+    return true;
+  } catch (error) {
+    console.error('❌ Error rejecting match:', error);
+    return false;
+  }
+}
+
+/**
+ * Get user's list of rejected match IDs
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of rejected user IDs
+ */
+async function getRejectedMatchIds(userId) {
+  if (!window.PEERFUSE_DB) {
+    console.warn('Firebase not initialized');
+    return [];
+  }
+  
+  try {
+    const snapshot = await window.PEERFUSE_DB.ref(`profiles/${userId}/rejected_match_ids`).once('value');
+    return snapshot.val() || [];
+  } catch (error) {
+    console.error('❌ Error fetching rejected match IDs:', error);
+    return [];
+  }
+}
+
+/**
+ * Clear rejected matches history (optional reset feature)
+ * @param {string} userId - User ID
+ * @returns {Promise<boolean>} Success status
+ */
+async function clearRejectedMatches(userId) {
+  if (!window.PEERFUSE_DB) {
+    console.warn('Firebase not initialized');
+    return false;
+  }
+  
+  try {
+    await window.PEERFUSE_DB.ref(`profiles/${userId}`).update({
+      rejected_match_ids: []
+    });
+    console.log('✅ Rejected matches cleared');
+    return true;
+  } catch (error) {
+    console.error('❌ Error clearing rejected matches:', error);
+    return false;
+  }
+}
+
 // Export functions to global scope
 window.FirebaseHelpers = {
   saveUser,
@@ -362,5 +441,8 @@ window.FirebaseHelpers = {
   saveFeedback,
   saveQuizResults,
   setCurrentUser,
-  saveMatch
+  saveMatch,
+  rejectMatch,
+  getRejectedMatchIds,
+  clearRejectedMatches
 };

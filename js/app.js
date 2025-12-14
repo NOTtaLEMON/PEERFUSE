@@ -514,14 +514,24 @@ async function handleFindMatch() {
           ${bestMatch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
         </ul>
       </div>
-      <button id="send-match-request-btn" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600;">
-        📩 Send Match Request
-      </button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+          📩 Send Match Request
+        </button>
+        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+          🔄 Try Another Match
+        </button>
+      </div>
     `;
     
     // Add click handler for send request button
     document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
       await sendMatchRequest(bestMatch);
+    });
+    
+    // Add click handler for rematch button
+    document.getElementById('rematch-btn')?.addEventListener('click', async () => {
+      await handleRematchRequest(bestMatch);
     });
 
     // Save match to Firebase
@@ -1433,6 +1443,117 @@ async function sendMatchRequest(match) {
   } catch (error) {
     console.error('Error sending match request:', error);
     window.UI.showToast('Failed to send match request', 'error');
+  }
+}
+
+/**
+ * Handle rematch request - reject current match and find next one
+ * @param {Object} currentMatch - Current match to reject
+ */
+async function handleRematchRequest(currentMatch) {
+  try {
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) return;
+
+    const userId = currentUser.uid;
+    const rejectedUserId = currentMatch.user.uid || currentMatch.user.username;
+    
+    // Track rejection in Firebase
+    if (window.FirebaseHelpers) {
+      const rejected = await window.FirebaseHelpers.rejectMatch(userId, rejectedUserId);
+      if (!rejected) {
+        window.UI.showToast('Could not track rejection', 'warning');
+      }
+    }
+
+    // Get updated rejected list
+    const rejectedIds = window.FirebaseHelpers 
+      ? await window.FirebaseHelpers.getRejectedMatchIds(userId)
+      : [rejectedUserId];
+
+    window.UI.showToast('Finding alternative matches...', 'info');
+
+    // Fetch current user profile and candidates
+    const currentUserProfile = AppState.currentUser;
+    const candidates = AppState.allProfiles || [];
+
+    // Use findRematch with exclusion list
+    const rematchResult = window.Matching.findRematch(
+      currentUserProfile,
+      candidates,
+      rejectedIds,
+      10
+    );
+
+    if (rematchResult.status === 'no_matches') {
+      // No more matches available
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `
+        <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
+          <h3 style="color: var(--error); margin: 0 0 12px 0;">⚠️ No More Matches</h3>
+          <p style="color: var(--text-secondary); margin: 0 0 16px 0;">
+            ${rematchResult.message}
+          </p>
+          <button onclick="findMatch()" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            🔄 Start New Search
+          </button>
+        </div>
+      `;
+      window.UI.showToast('You\'ve reviewed all compatible matches!', 'info');
+      return;
+    }
+
+    if (rematchResult.matches && rematchResult.matches.length > 0) {
+      // Display first alternative match
+      const bestRematch = rematchResult.matches[0];
+      AppState.currentMatches = rematchResult.matches;
+      AppState.currentMatchIndex = 0;
+
+      const qualityBadge = window.Matching.getMatchQualityBadge(bestRematch.score);
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `
+        <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--success); border-radius: 4px; margin-bottom: 16px;">
+          <p style="color: var(--success); margin: 0; font-weight: 600;">✓ Found alternative match!</p>
+        </div>
+        <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
+          <h3 style="margin: 0 0 8px 0; color: white;">Next Match</h3>
+          <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
+            <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestRematch.score} points</p>
+            <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
+              ${qualityBadge.emoji} ${qualityBadge.text}
+            </span>
+          </div>
+          <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
+        </div>
+        <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
+          <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
+          <ul style="line-height: 1.8;">
+            ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
+          </ul>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+            📩 Send Match Request
+          </button>
+          <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+            🔄 Try Another Match
+          </button>
+        </div>
+      `;
+
+      // Attach event listeners to new buttons
+      document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
+        await sendMatchRequest(bestRematch);
+      });
+      document.getElementById('rematch-btn')?.addEventListener('click', async () => {
+        await handleRematchRequest(bestRematch);
+      });
+
+      window.UI.showToast(`Found ${rematchResult.matches.length} alternative match(es)!`, 'success');
+    }
+  } catch (error) {
+    console.error('Error handling rematch request:', error);
+    window.UI.showToast('Failed to find alternative matches', 'error');
   }
 }
 

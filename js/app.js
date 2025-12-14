@@ -438,7 +438,6 @@ async function handleFindMatch() {
 
   // Get user profile
   let profile = window.Auth.LocalStorage.getUserProfile();
-  
   if (!profile || !profile.strengths || !profile.weaknesses) {
     window.UI.showToast('Please create your profile first', 'error');
     window.UI.show('profile-section');
@@ -471,84 +470,29 @@ async function handleFindMatch() {
     if (window.FirebaseHelpers) {
       const profiles = await window.FirebaseHelpers.fetchAllProfiles();
       candidates = profiles;
+      console.log('✅ Fetched profiles:', candidates.length, candidates);
     }
 
     // Merge with local users
     candidates = [...candidates, ...AppState.localUsers];
+    console.log('✅ Total candidates after merge:', candidates.length, candidates);
 
     if (candidates.length === 0) {
       document.getElementById('result').innerHTML = '<p class="text-muted">No other users in the matching pool yet. Be the first to create a profile!</p>';
       return;
     }
 
-async function findMatch() {
-  try {
-    // Get current user
-    const currentUser = firebase.auth().currentUser;
-    if (!currentUser) {
-      window.UI.showToast('Please log in first', 'error');
-      return;
-    }
-
-    window.UI.showToast('Finding your perfect study buddy...', 'info');
-    document.getElementById('result').innerHTML = '<p class="text-muted" style="text-align: center; padding: 40px;">⏳ Searching for compatible matches...</p>';
-
-    const userKey = currentUser.uid;
-
-    // Fetch current user profile
-    const userSnapshot = await firebase.database().ref(`users/${userKey}`).once('value');
-    let targetUser = userSnapshot.val();
-
-    if (!targetUser) {
-      // Fallback to profiles
-      const profileSnapshot = await firebase.database().ref(`profiles/${userKey}`).once('value');
-      targetUser = profileSnapshot.val();
-    }
-
-    if (!targetUser) {
-      window.UI.showToast('Please complete your profile first', 'error');
-      return;
-    }
-
-    // Store current user in AppState
-    AppState.currentUser = targetUser;
-    targetUser.uid = userKey; // Ensure UID is set
-
-    // Fetch ALL user profiles from database
-    const allProfilesSnapshot = await firebase.database().ref('profiles').once('value');
-    const allProfilesData = allProfilesSnapshot.val();
-    
-    let candidates = [];
-    if (allProfilesData) {
-      candidates = Object.entries(allProfilesData).map(([uid, profile]) => ({
-        uid,
-        ...profile
-      }));
-    }
-
-    // Also include any local users
-    candidates = [...candidates, ...AppState.localUsers];
-    
-    // Store all profiles in AppState for later use
-    AppState.allProfiles = candidates;
-
-    if (candidates.length === 0) {
-      document.getElementById('result').innerHTML = '<p class="text-muted">No other users in the matching pool yet. Be the first to create a profile!</p>';
-      return;
-    }
-
-    // Get rejected IDs to exclude from search
-    const rejectedIds = window.FirebaseHelpers 
-      ? await window.FirebaseHelpers.getRejectedMatchIds(userKey)
-      : [];
+    // Debug: Log targetUser
+    console.log('🔍 Target user for matching:', targetUser);
 
     // Find matches using exclusion list
     const matches = window.Matching.findRematch(
       targetUser,
       candidates,
-      rejectedIds,
+      [], // No rejected IDs for now
       10
     );
+    console.log('🟢 Matching result:', matches);
 
     if (!matches.matches || matches.matches.length === 0) {
       document.getElementById('result').innerHTML = '<p class="text-muted">No compatible matches found. Check back later as more users join!</p>';
@@ -612,14 +556,8 @@ async function findMatch() {
 
     window.UI.showToast('Match found!', 'success');
   } catch (error) {
-    console.error('Error finding match:', error);
-    document.getElementById('result').innerHTML = '<p class="error">Error finding match. Please try again.</p>';
-    window.UI.showToast('Error finding match', 'error');
-  }
-}
-  } catch (error) {
-    console.error('Error finding match:', error);
-    document.getElementById('result').innerHTML = '<p class="error">Error finding match. Please try again.</p>';
+    console.error('❌ Error in handleFindMatch:', error);
+    document.getElementById('result').innerHTML = `<p class="text-danger">Error finding match: ${error.message || error}</p>`;
   }
 }
 
@@ -911,78 +849,115 @@ function displayPreQuizQuestions(quizContent) {
  */
 function parseQuizContent(content) {
   const questions = [];
-  
-  // Split by "Question" followed by a number (handles both **Question and plain Question)
-  const questionBlocks = content.split(/(?:^|\n)\*?\*?Question\s+\d+/i).filter(b => b.trim());
-  
-  questionBlocks.forEach((block, blockIndex) => {
-    const lines = block.split('\n').map(l => l.trim()).filter(l => l);
-    
-    if (lines.length < 5) return; // Need at least question + 4 options
-    
+  // Use a robust regex to capture each Question block including everything until the next Question
+  // This handles variations like "Question 1 [STRENGTH - HARD]" and preserves bracketed difficulty
+  const regex = /Question\s*\d+[^\n]*[\n\r]*([\s\S]*?)(?=Question\s*\d+|$)/gi;
+  let match;
+  const blocks = [];
+
+  // First, capture any leading headers (e.g., "Question 1 [STRENGTH - HARD]") so we can preserve difficulty
+  const headerRegex = /Question\s*(\d+)\s*([^\n\r]*)/i;
+
+  // Iterate through matches and build blocks that include header and body
+  while ((match = regex.exec(content)) !== null) {
+    const fullMatch = match[0];
+    // Try to find the header that precedes this match
+    const headerSearchStart = Math.max(0, match.index - 60);
+    const headerSlice = content.slice(headerSearchStart, match.index + 1);
+    const headerMatch = headerSlice.match(headerRegex);
+    let header = '';
+    if (headerMatch) {
+      header = headerMatch[0];
+    }
+    blocks.push((header + '\n' + match[1]).trim());
+  }
+
+  // Fallback: if regex found nothing, try splitting by lines that start with "Question"
+  if (blocks.length === 0) {
+    const alt = content.split(/(?:^|\n)Question\s*\d+/i).map(b => b.trim()).filter(b => b);
+    blocks.push(...alt);
+  }
+
+  blocks.forEach((block, blockIndex) => {
+    const lines = block.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    if (lines.length === 0) return;
+
     // Extract difficulty from bracket notation like [STRENGTH - HARD]
     let difficulty = '';
     const difficultyMatch = block.match(/\[(STRENGTH|WEAKNESS)\s*(?:-\s*(EASY|MEDIUM|HARD))?\]/i);
-    
     if (difficultyMatch) {
       difficulty = difficultyMatch[0];
     } else {
-      // Fallback: determine based on question number position
-      if (blockIndex < 10) {
-        difficulty = '[STRENGTH]';
-      } else {
-        difficulty = '[WEAKNESS]';
-      }
+      // fallback by block index (first 10 -> strengths)
+      difficulty = blockIndex < 10 ? '[STRENGTH]' : '[WEAKNESS]';
     }
-    
-    // Extract question text (first non-empty, non-bracket line)
+
+    // Find the first non-empty line that looks like question text (skip headers that start with "Question")
     let questionText = '';
     let questionLineIndex = 0;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (line && !line.includes('[') && !line.toUpperCase().includes('STRENGTH') && !line.toUpperCase().includes('WEAKNESS')) {
-        questionText = line;
-        questionLineIndex = i;
-        break;
-      }
+      if (/^Question\b/i.test(line)) continue;
+      if (/^\[.*\]$/.test(line)) continue;
+      // Assume the first remaining line is the question
+      questionText = line;
+      questionLineIndex = i;
+      break;
     }
-    
+
     if (!questionText) return;
-    
-    // Extract answer options (lines starting with A), B), C), D))
-    let options = [];
+
+    // Extract answer options (accept formats like "A) ...", "A. ...", "A)" with or without spaces)
+    const options = [];
     let correctAnswer = '';
     let explanation = '';
-    
+
+    const optionRegex = /^([A-D])\s*[\)\.]\s*(.*)$/i;
+    const correctRegex = /Correct\s*Answer\s*[:\-]?\s*([A-D])/i;
+    const explanationRegex = /Explanation\s*[:\-]?\s*(.+)/i;
+
     for (let i = questionLineIndex + 1; i < lines.length; i++) {
       const line = lines[i];
-      
-      // Match options like "A) text" or "A) text"
-      if (line.match(/^[A-D]\)/)) {
-        options.push(line);
-      } else if (line.toUpperCase().includes('CORRECT ANSWER')) {
-        // Extract letter from "Correct Answer: B"
-        const match = line.match(/[A-D]/);
-        if (match) correctAnswer = match[0];
-      } else if (line.toUpperCase().includes('EXPLANATION')) {
-        // Extract explanation text
-        const match = line.match(/EXPLANATION\s*:?\s*(.+)/i);
-        if (match) explanation = match[1];
+
+      const optMatch = line.match(optionRegex);
+      if (optMatch) {
+        // optMatch[1] = letter, optMatch[2] = option text
+        options.push(optMatch[2].trim());
+        continue;
+      }
+
+      const corr = line.match(correctRegex);
+      if (corr && corr[1]) {
+        correctAnswer = corr[1].toUpperCase();
+        continue;
+      }
+
+      const expl = line.match(explanationRegex);
+      if (expl && expl[1]) {
+        explanation = expl[1].trim();
+        continue;
       }
     }
-    
-    // Only add if we have question and all 4 options
-    if (questionText && options.length === 4) {
+
+    // If correctAnswer not found in lines, also try to find a single-letter answer anywhere in the block labeled "Correct"
+    if (!correctAnswer) {
+      const anyCorr = block.match(/Correct\s*Answer\s*[:\-]?\s*([A-D])/i);
+      if (anyCorr && anyCorr[1]) correctAnswer = anyCorr[1].toUpperCase();
+    }
+
+    // Only add if we have question and at least 4 options
+    if (questionText && options.length >= 4) {
+      // Trim to first 4 options in case extras are present
       questions.push({
         question: questionText,
         difficulty,
-        options,
+        options: options.slice(0, 4),
         correctAnswer,
         explanation
       });
     }
   });
-  
+
   console.log(`Parsed ${questions.length} questions from quiz content`);
   return questions;
 }

@@ -287,34 +287,39 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
 
-        prompt = f"""Generate EXACTLY 20 multiple choice questions. DO NOT include any introductory text, explanations, or conclusions. START IMMEDIATELY with "Question 1".
+        prompt = f"""Create a 20-question multiple choice quiz. Output ONLY the questions in the exact format shown below. Do NOT add any introduction or commentary.
 
-Student Profile:
-- Strengths: {strengths_text}
-- Weaknesses: {weaknesses_text}
+STUDENT PROFILE:
+Strengths: {strengths_text}
+Weaknesses: {weaknesses_text}
 
-Format EVERY question EXACTLY like this:
+REQUIREMENTS:
+- Generate ALL 20 questions (Questions 1-20)
+- Questions 1-10: Test STRENGTHS - moderately challenging
+- Questions 11-20: Test WEAKNESSES - slightly easier difficulty
+- Each question: 4 options (A/B/C/D), correct answer, brief explanation
+
+EXACT FORMAT (use this for every question):
 
 Question 1 [STRENGTH - HARD]
-What statistical test compares means of three or more independent groups?
-A) Paired t-test
-B) Independent samples t-test
-C) One-way ANOVA
-D) Chi-squared test
-Correct Answer: C
-Explanation: One-way ANOVA compares means of three or more groups.
+[Question text]?
+A) [Option A]
+B) [Option B]
+C) [Option C]
+D) [Option D]
+Correct Answer: [Letter]
+Explanation: [Brief explanation]
 
 Question 2 [STRENGTH - MEDIUM]
-[Next question...]
+[Question text]?
+A) [Option A]
+B) [Option B]
+C) [Option C]
+D) [Option D]
+Correct Answer: [Letter]
+Explanation: [Brief explanation]
 
-RULES:
-- Questions 1-10: Focus on STRENGTHS ({strengths_text}) - moderately challenging
-- Questions 11-20: Focus on WEAKNESSES ({weaknesses_text}) - slightly easier
-- Each question has exactly 4 options (A, B, C, D)
-- Start with Question 1, end with Question 20
-- NO preamble text - start IMMEDIATELY with Question 1
-
-Question 1"""
+Continue this pattern through Question 20. Generate all questions now:"""
 
         response = safe_generate_content(prompt)
         response_text = response.text if hasattr(response, 'text') else str(response)

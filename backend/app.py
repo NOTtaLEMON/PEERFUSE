@@ -280,25 +280,25 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
         
-        prompt = f"""Generate a 20-question multiple choice assessment quiz for a student with the following profile:
+          prompt = f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:
 
 **Strengths:** {strengths_text}
 **Weaknesses:** {weaknesses_text}
 
-Create exactly 20 multiple choice questions following these rules:
+Create exactly 5 multiple choice questions following these rules:
 
-1. **Questions 1-10:** Focus on their STRENGTHS ({strengths_text})
-   - Make these moderately challenging to hard (they should know this well)
-   - Test deeper understanding, not just memorization
-   - Mix difficulty: 3 medium, 7 hard questions
+1. **Questions 1-3:** Focus on their STRENGTHS ({strengths_text})
+    - Make these moderately challenging to hard (they should know this well)
+    - Test deeper understanding, not just memorization
+    - Mix difficulty: 1 medium, 2 hard questions
 
-2. **Questions 11-20:** Focus on their WEAKNESSES ({weaknesses_text})
-   - Make these easier to medium difficulty (they're still learning)
-   - Test fundamental concepts and basics
-   - Mix difficulty: 5 easy, 5 medium questions
+2. **Questions 4-5:** Focus on their WEAKNESSES ({weaknesses_text})
+    - Make these easier to medium difficulty (they're still learning)
+    - Test fundamental concepts and basics
+    - Mix difficulty: 1 easy, 1 medium question
 
 For EACH question, provide:
-- Question number (1-20)
+- Question number (1-5)
 - The question text
 - 4 answer options labeled A, B, C, D
 - Indicate the correct answer

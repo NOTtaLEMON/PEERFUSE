@@ -1,85 +1,96 @@
-/* PeerFuse - Modern, Accessible Design System */
-/* Enhanced for WCAG 2.1 AA, Dark Mode & Beautiful UX */
+/* PeerFuse - Cozy Coffee Shop Study Session Theme */
+/* A warm, focused, and inviting design like studying in a quiet café */
 
 /* ================================
    CSS VARIABLES & THEME
    ================================ */
 :root {
-  /* Primary Colors - Enhanced Contrast (WCAG AA Compliant) */
-  --primary: #1e40af;
-  --primary-dark: #1e3a8a;
-  --primary-light: #3b82f6;
-  --primary-rgb: 30, 64, 175;
-  --accent: #7c3aed;
-  --accent-light: #a78bfa;
-  --accent-dark: #6d28d9;
+  /* Coffee Shop Color Palette */
+  /* Primary: Warm espresso browns */
+  --primary: #6F4E37;           /* Coffee brown */
+  --primary-dark: #5D4037;      /* Dark roast */
+  --primary-light: #8B7355;     /* Latte */
+  --primary-rgb: 111, 78, 55;
   
-  /* Neutral Colors - Better Text Contrast */
-  --muted: #64748b;
-  --text-dark: #0f172a;
-  --text-light: #475569;
-  --text-lighter: #94a3b8;
-  --border: #e2e8f0;
-  --border-dark: #cbd5e1;
+  /* Accent: Warm amber/gold like cafe lighting */
+  --accent: #C8A97E;            /* Warm cream/caramel */
+  --accent-light: #DBC4A0;      /* Light cream */
+  --accent-dark: #A67B5B;       /* Caramel */
   
-  /* Background Colors */
-  --card-bg: #ffffff;
-  --page-bg: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  --input-bg: #ffffff;
-  --hover-bg: #f1f5f9;
+  /* Neutral Colors - Warm undertones */
+  --muted: #8B8178;             /* Warm gray */
+  --text-dark: #3E3029;         /* Dark chocolate */
+  --text-light: #5C5046;        /* Medium brown */
+  --text-lighter: #9E948A;      /* Light warm gray */
+  --border: #E8E0D5;            /* Cream border */
+  --border-dark: #D4C8BA;       /* Darker cream */
   
-  /* Semantic Colors - High Contrast */
-  --success: #059669;
-  --success-light: #d1fae5;
-  --error: #dc2626;
-  --error-light: #fee2e2;
-  --warning: #d97706;
-  --warning-light: #fef3c7;
-  --info: #0284c7;
-  --info-light: #e0f2fe;
+  /* Background Colors - Paper & wood textures feel */
+  --card-bg: #FFFAF5;           /* Warm white/cream paper */
+  --page-bg: linear-gradient(165deg, #F5EDE4 0%, #EDE4D8 50%, #E8DED0 100%);
+  --input-bg: #FFFCF8;          /* Soft cream */
+  --hover-bg: #F9F3EB;          /* Slightly darker cream on hover */
+  
+  /* Semantic Colors - Muted & cozy */
+  --success: #6B8E6B;           /* Sage green - like plants in a cafe */
+  --success-light: #E8F0E8;
+  --error: #B85C5C;             /* Muted terracotta red */
+  --error-light: #F5E8E8;
+  --warning: #C9A857;           /* Warm amber */
+  --warning-light: #FDF8E8;
+  --info: #7A8B9A;              /* Muted steel blue */
+  --info-light: #EDF1F5;
   
   /* Spacing & Layout */
-  --radius: 12px;
-  --radius-sm: 8px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.15);
-  --glow: 0 0 20px rgba(30, 64, 175, 0.15);
+  --radius: 16px;               /* Softer, more rounded corners */
+  --radius-sm: 10px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 2px 4px rgba(62, 48, 41, 0.04);
+  --shadow: 0 4px 16px rgba(62, 48, 41, 0.08);
+  --shadow-lg: 0 8px 32px rgba(62, 48, 41, 0.1);
+  --shadow-xl: 0 16px 48px rgba(62, 48, 41, 0.12);
+  --glow: 0 0 24px rgba(200, 169, 126, 0.2);
   
   /* Transitions - Smooth & Performant */
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: all 0.15s ease-in-out;
+  --transition-fast: all 0.15s ease-out;
+  
+  /* Typography */
+  --font-heading: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Dark Mode Support - Manual Toggle + System Preference */
+/* Dark Mode - Evening Café Ambiance */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text-dark: #f1f5f9;
-    --text-light: #cbd5e1;
-    --text-lighter: #94a3b8;
-    --card-bg: #1e293b;
-    --page-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    --input-bg: #334155;
-    --hover-bg: #334155;
-    --border: #475569;
-    --border-dark: #334155;
+    --text-dark: #F5EDE4;
+    --text-light: #D4C8BA;
+    --text-lighter: #A69B8E;
+    --card-bg: #2D2520;          /* Dark wood */
+    --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
+    --input-bg: #3A322B;
+    --hover-bg: #3A322B;
+    --border: #4A403A;
+    --border-dark: #3A322B;
+    --primary: #C8A97E;
+    --primary-light: #DBC4A0;
   }
 }
 
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
-  --text-dark: #f1f5f9;
-  --text-light: #cbd5e1;
-  --text-lighter: #94a3b8;
-  --card-bg: #1e293b;
-  --page-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  --input-bg: #334155;
-  --hover-bg: #334155;
-  --border: #475569;
-  --border-dark: #334155;
+  --text-dark: #F5EDE4;
+  --text-light: #D4C8BA;
+  --text-lighter: #A69B8E;
+  --card-bg: #2D2520;
+  --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
+  --input-bg: #3A322B;
+  --hover-bg: #3A322B;
+  --border: #4A403A;
+  --border-dark: #3A322B;
+  --primary: #C8A97E;
+  --primary-light: #DBC4A0;
 }
 
 /* ================================
@@ -91,26 +102,29 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   height: 100%;
   margin: 0;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-               'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 
-               'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-body);
   background: var(--page-bg);
   background-attachment: fixed;
   color: var(--text-dark);
-  line-height: 1.6;
+  line-height: 1.7;
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background 0.3s ease;
+  transition: background 0.4s ease, color 0.3s ease;
   position: relative;
 }
 
-/* Subtle animated background pattern */
+/* Subtle paper texture & warm ambient lighting - CSS only */
 body::before {
   content: '';
   position: fixed;
@@ -119,36 +133,35 @@ body::before {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.08) 0%, transparent 50%);
+    /* Soft grain effect */
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(139, 113, 85, 0.01) 2px,
+      rgba(139, 113, 85, 0.01) 4px
+    ),
+    /* Warm ambient light from top - like cafe lighting */
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200, 169, 126, 0.15) 0%, transparent 60%),
+    /* Corner warmth - like lamp light */
+    radial-gradient(circle at 10% 90%, rgba(200, 169, 126, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(200, 169, 126, 0.06) 0%, transparent 40%);
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
-/* Background image for enhanced aesthetics */
+/* Remove complex animated background for better performance */
 body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: 
-    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200"><defs><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" seed="1" /><feDisplacementMap in="SourceGraphic" scale="3" /></filter></defs><rect width="1200" height="1200" fill="none" filter="url(%23noise)" opacity="0.02"/><circle cx="100" cy="150" r="80" fill="rgba(30,64,175,0.03)" /><circle cx="1100" cy="300" r="120" fill="rgba(124,58,237,0.03)" /><circle cx="600" cy="400" r="100" fill="rgba(59,130,246,0.02)" /><circle cx="200" cy="900" r="90" fill="rgba(30,64,175,0.03)" /><circle cx="1000" cy="1000" r="110" fill="rgba(124,58,237,0.03)" /><path d="M 0 200 Q 300 150 600 200 T 1200 200" stroke="rgba(59,130,246,0.05)" stroke-width="2" fill="none" /><path d="M 0 600 Q 300 550 600 600 T 1200 600" stroke="rgba(30,64,175,0.05)" stroke-width="2" fill="none" /><path d="M 0 1000 Q 300 950 600 1000 T 1200 1000" stroke="rgba(124,58,237,0.04)" stroke-width="2" fill="none" /></svg>');
-  background-repeat: repeat;
-  background-size: 1200px 1200px;
-  pointer-events: none;
-  z-index: -1;
-  opacity: 0.4;
-  animation: drift 20s linear infinite;
+  display: none;
 }
 
-@keyframes drift {
-  0% { transform: translateX(0px) translateY(0px); }
-  25% { transform: translateX(-10px) translateY(-5px); }
-  50% { transform: translateX(-20px) translateY(-10px); }
-  75% { transform: translateX(-10px) translateY(-5px); }
-  100% { transform: translateX(0px) translateY(0px); }
+/* Typography - Academic but friendly */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
 }
 
 @keyframes themeRotate {

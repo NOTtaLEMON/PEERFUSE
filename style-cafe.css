@@ -1,0 +1,1133 @@
+/* PeerFuse - Cozy Coffee Shop Study Session Theme */
+/* A warm, focused, and inviting design like studying in a quiet café */
+
+/* ================================
+   CSS VARIABLES & THEME
+   ================================ */
+:root {
+  /* Coffee Shop Color Palette */
+  /* Primary: Warm espresso browns */
+  --primary: #6F4E37;           /* Coffee brown */
+  --primary-dark: #5D4037;      /* Dark roast */
+  --primary-light: #8B7355;     /* Latte */
+  --primary-rgb: 111, 78, 55;
+  
+  /* Accent: Warm amber/gold like cafe lighting */
+  --accent: #C8A97E;            /* Warm cream/caramel */
+  --accent-light: #DBC4A0;      /* Light cream */
+  --accent-dark: #A67B5B;       /* Caramel */
+  
+  /* Neutral Colors - Warm undertones */
+  --muted: #8B8178;             /* Warm gray */
+  --text-dark: #3E3029;         /* Dark chocolate */
+  --text-light: #5C5046;        /* Medium brown */
+  --text-lighter: #9E948A;      /* Light warm gray */
+  --border: #E8E0D5;            /* Cream border */
+  --border-dark: #D4C8BA;       /* Darker cream */
+  
+  /* Background Colors - Paper & wood textures feel */
+  --card-bg: #FFFAF5;           /* Warm white/cream paper */
+  --page-bg: linear-gradient(165deg, #F5EDE4 0%, #EDE4D8 50%, #E8DED0 100%);
+  --input-bg: #FFFCF8;          /* Soft cream */
+  --hover-bg: #F9F3EB;          /* Slightly darker cream on hover */
+  
+  /* Semantic Colors - Muted & cozy */
+  --success: #6B8E6B;           /* Sage green - like plants in a cafe */
+  --success-light: #E8F0E8;
+  --error: #B85C5C;             /* Muted terracotta red */
+  --error-light: #F5E8E8;
+  --warning: #C9A857;           /* Warm amber */
+  --warning-light: #FDF8E8;
+  --info: #7A8B9A;              /* Muted steel blue */
+  --info-light: #EDF1F5;
+  
+  /* Spacing & Layout */
+  --radius: 16px;               /* Softer, more rounded corners */
+  --radius-sm: 10px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  
+  /* Shadows - Soft & warm like lamplight */
+  --shadow-sm: 0 2px 4px rgba(62, 48, 41, 0.04);
+  --shadow: 0 4px 16px rgba(62, 48, 41, 0.08);
+  --shadow-lg: 0 8px 32px rgba(62, 48, 41, 0.1);
+  --shadow-xl: 0 16px 48px rgba(62, 48, 41, 0.12);
+  --shadow-inner: inset 0 2px 4px rgba(62, 48, 41, 0.04);
+  --glow: 0 0 24px rgba(200, 169, 126, 0.2);
+  
+  /* Transitions - Smooth & natural */
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease-out;
+  
+  /* Typography */
+  --font-heading: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+  --font-body: 'Inter', 'Segoe UI', 'Roboto', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* Dark Mode - Evening Café Ambiance */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --text-dark: #F5EDE4;
+    --text-light: #D4C8BA;
+    --text-lighter: #A69B8E;
+    --card-bg: #2D2520;          /* Dark wood */
+    --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
+    --input-bg: #3A322B;
+    --hover-bg: #3A322B;
+    --border: #4A403A;
+    --border-dark: #3A322B;
+    --primary: #C8A97E;
+    --primary-light: #DBC4A0;
+    --accent: #E5D4B8;
+  }
+}
+
+[data-theme="dark"] {
+  --text-dark: #F5EDE4;
+  --text-light: #D4C8BA;
+  --text-lighter: #A69B8E;
+  --card-bg: #2D2520;
+  --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
+  --input-bg: #3A322B;
+  --hover-bg: #3A322B;
+  --border: #4A403A;
+  --border-dark: #3A322B;
+  --primary: #C8A97E;
+  --primary-light: #DBC4A0;
+  --accent: #E5D4B8;
+}
+
+/* ================================
+   FONT IMPORTS (Add to HTML head)
+   ================================ */
+/* 
+Add these to your HTML <head>:
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+*/
+
+/* ================================
+   GLOBAL RESET & BASE STYLES
+   ================================ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--page-bg);
+  background-attachment: fixed;
+  color: var(--text-dark);
+  line-height: 1.7;
+  font-size: 16px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.4s ease, color 0.3s ease;
+  position: relative;
+}
+
+/* Subtle paper texture overlay - CSS only, no images */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    /* Soft grain effect */
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(139, 113, 85, 0.01) 2px,
+      rgba(139, 113, 85, 0.01) 4px
+    ),
+    /* Warm ambient light from top */
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200, 169, 126, 0.15) 0%, transparent 60%),
+    /* Corner warmth - like lamp light */
+    radial-gradient(circle at 10% 90%, rgba(200, 169, 126, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(200, 169, 126, 0.06) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Remove the complex SVG background, keep it simple */
+body::after {
+  display: none;
+}
+
+/* ================================
+   TYPOGRAPHY
+   ================================ */
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-dark);
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin-bottom: 0.75em;
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+h4 {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+p {
+  margin-bottom: 1em;
+  color: var(--text-light);
+}
+
+/* Academic-style links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: var(--transition-fast);
+}
+
+a:hover {
+  color: var(--primary-dark);
+  border-bottom-color: var(--primary);
+}
+
+/* ================================
+   FOCUS & ACCESSIBILITY
+   ================================ */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ================================
+   MAIN CONTAINER
+   ================================ */
+.container, main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .container, main {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* ================================
+   HEADER - Cozy Study Nook
+   ================================ */
+.hero, header {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+  background: linear-gradient(180deg, 
+    rgba(200, 169, 126, 0.1) 0%, 
+    transparent 100%
+  );
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.hero h1, header h1 {
+  font-family: var(--font-heading);
+  color: var(--primary-dark);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.hero h1::before {
+  content: '☕';
+  font-size: 0.8em;
+}
+
+.hero p, header p {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  max-width: 600px;
+  margin: 0 auto;
+  font-style: italic;
+}
+
+/* User bar styling */
+.user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+#user-welcome {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+/* ================================
+   NAVIGATION BAR
+   ================================ */
+.nav-bar, nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dark);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary-light);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+}
+
+/* ================================
+   CARDS - Like Index Cards
+   ================================ */
+section, .card, .section {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: var(--transition);
+}
+
+section:hover, .card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Card header styling - like notebook tabs */
+section h2, .card h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border);
+  position: relative;
+}
+
+section h2::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* Decorative corner - like coffee ring stain */
+section::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  opacity: 0.3;
+  box-shadow: 
+    4px 4px 0 rgba(200, 169, 126, 0.2),
+    -2px 6px 0 rgba(200, 169, 126, 0.15);
+}
+
+/* ================================
+   BUTTONS - Warm & Inviting
+   ================================ */
+button, .btn {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Primary button - Coffee brown */
+button, .btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #FFFAF5;
+  box-shadow: 0 2px 8px rgba(111, 78, 55, 0.25);
+}
+
+button:hover, .btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(111, 78, 55, 0.3);
+}
+
+button:active, .btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(111, 78, 55, 0.2);
+}
+
+/* Secondary button - Cream/outline */
+.btn-secondary {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--border-dark);
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+/* Accent button - Warm amber */
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: var(--text-dark);
+}
+
+.btn-accent:hover {
+  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+}
+
+/* Danger button - Muted terracotta */
+.btn-danger {
+  background: linear-gradient(135deg, var(--error) 0%, #A04848 100%);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #C96B6B 0%, var(--error) 100%);
+}
+
+/* ================================
+   FORM ELEMENTS - Notebook Style
+   ================================ */
+input, select, textarea {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  color: var(--text-dark);
+  width: 100%;
+  transition: var(--transition);
+  box-shadow: var(--shadow-inner);
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: var(--border-dark);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-inner), 0 0 0 3px rgba(111, 78, 55, 0.1);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-lighter);
+  font-style: italic;
+}
+
+/* Form labels - like handwritten notes */
+label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Select dropdown styling */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236F4E37' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+/* Textarea - like notebook paper */
+textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.7;
+  background-image: repeating-linear-gradient(
+    transparent 0px,
+    transparent 27px,
+    var(--border) 27px,
+    var(--border) 28px
+  );
+  background-position: 0 8px;
+}
+
+/* ================================
+   SECTION DIVIDERS
+   ================================ */
+hr, .divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--border-dark) 20%, 
+    var(--border-dark) 80%, 
+    transparent 100%
+  );
+  margin: 2rem 0;
+}
+
+/* Decorative divider with coffee bean */
+.divider-decorated {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.divider-decorated::before,
+.divider-decorated::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-dark);
+}
+
+.divider-decorated::before {
+  background: linear-gradient(90deg, transparent, var(--border-dark));
+}
+
+.divider-decorated::after {
+  background: linear-gradient(90deg, var(--border-dark), transparent);
+}
+
+/* ================================
+   STATUS MESSAGES
+   ================================ */
+.status, .alert {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status.success, .alert-success {
+  background: var(--success-light);
+  color: #4A6B4A;
+  border-left: 4px solid var(--success);
+}
+
+.status.error, .alert-error {
+  background: var(--error-light);
+  color: #8B4444;
+  border-left: 4px solid var(--error);
+}
+
+.status.warning, .alert-warning {
+  background: var(--warning-light);
+  color: #8B7033;
+  border-left: 4px solid var(--warning);
+}
+
+.status.info, .alert-info {
+  background: var(--info-light);
+  color: #5A6B7A;
+  border-left: 4px solid var(--info);
+}
+
+/* ================================
+   TOAST NOTIFICATIONS
+   ================================ */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 1rem 1.5rem;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 9999;
+  animation: toastSlideIn 0.3s ease-out;
+  max-width: 400px;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ================================
+   LOADING STATES
+   ================================ */
+.loading, .spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Coffee cup loading animation */
+.loading-cafe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--text-light);
+}
+
+.loading-cafe::before {
+  content: '☕';
+  font-size: 2.5rem;
+  animation: steam 2s ease-in-out infinite;
+}
+
+@keyframes steam {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* ================================
+   MATCH CARDS - Study Partner Cards
+   ================================ */
+.match-card, .match-result {
+  background: linear-gradient(135deg, var(--card-bg) 0%, #FFF8F0 100%);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.match-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary-light));
+}
+
+/* ================================
+   THEME TOGGLE - Sun/Moon
+   ================================ */
+.theme-toggle {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary);
+  transform: rotate(15deg);
+  box-shadow: var(--shadow);
+}
+
+.theme-icon {
+  font-size: 1.25rem;
+  transition: var(--transition);
+}
+
+/* ================================
+   QUIZ ELEMENTS
+   ================================ */
+.question-block {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+}
+
+.question-block p:first-child {
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 1rem;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  margin-bottom: 0.5rem;
+  border: 1px solid transparent;
+}
+
+.options label:hover {
+  background: var(--hover-bg);
+  border-color: var(--border);
+}
+
+.options input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+}
+
+/* ================================
+   NOTIFICATION PANEL
+   ================================ */
+.notification-panel {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 360px;
+  max-height: 70vh;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideInRight 0.25s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notification-header h3 {
+  color: white;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.notification-item {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-fast);
+}
+
+.notification-item:hover {
+  background: var(--hover-bg);
+}
+
+/* ================================
+   MODAL STYLES
+   ================================ */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(62, 48, 41, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    transform: scale(0.95) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ================================
+   SLIDER STYLES
+   ================================ */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(111, 78, 55, 0.3);
+  transition: var(--transition-fast);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(111, 78, 55, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(111, 78, 55, 0.3);
+}
+
+/* Slider labels */
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.slider-emoji {
+  text-align: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: var(--transition-fast);
+}
+
+.slider-emoji:hover,
+.slider-emoji.active {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ================================
+   UTILITY CLASSES
+   ================================ */
+.hidden {
+  display: none !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.text-accent {
+  color: var(--accent-dark);
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+.py-2 { padding-top: 1rem; padding-bottom: 1rem; }
+.px-2 { padding-left: 1rem; padding-right: 1rem; }
+
+.small-text {
+  font-size: 0.875rem;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+  
+  .hero, header {
+    padding: 2rem 1rem 1.5rem;
+  }
+  
+  section, .card {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+  }
+  
+  .nav-bar, nav {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  button, .btn {
+    padding: 0.875rem 1.25rem;
+    width: 100%;
+  }
+  
+  .notification-panel {
+    width: calc(100% - 20px);
+    right: 10px;
+    left: 10px;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .user-bar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  section, .card {
+    padding: 1.25rem;
+  }
+  
+  input, select, textarea {
+    padding: 0.75rem;
+  }
+}
+
+/* ================================
+   PRINT STYLES
+   ================================ */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .nav-bar, .theme-toggle, .notification-panel, .toast {
+    display: none !important;
+  }
+  
+  section, .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    page-break-inside: avoid;
+  }
+}
+
+/* ================================
+   REDUCED MOTION
+   ================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================================
+   SCROLLBAR STYLING
+   ================================ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--border);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 5px;
+  border: 2px solid var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-light);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) var(--border);
+}
+
+/* ================================
+   SELECTION STYLING
+   ================================ */
+::selection {
+  background: rgba(200, 169, 126, 0.3);
+  color: var(--text-dark);
+}
+
+::-moz-selection {
+  background: rgba(200, 169, 126, 0.3);
+  color: var(--text-dark);
+}

@@ -316,19 +316,27 @@ GENERATE ALL 20 NOW - DO NOT STOP UNTIL YOU REACH QUESTION 20:"""
         response_text = response.text if hasattr(response, 'text') else str(response)
 
         logger.info("Successfully generated pre-session quiz")
-        return jsonify({
+        response = make_response(jsonify({
             'success': True,
             'content': response_text
-        }), 200
+        }), 200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
 
     except Exception as e:
         logger.error(
             f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}"
         )
-        return jsonify({
+        response = make_response(jsonify({
             'success': False,
             'error': f'Failed to generate quiz: {str(e)}'
-        }), 500
+        }), 500)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return response
 
 if __name__ == '__main__':
     import sys

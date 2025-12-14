@@ -79,7 +79,7 @@ function checkTimezoneCompatibility(tzA, tzB, availA, availB) {
 
 // Unified matching weights (skills-first configuration)
 const MATCHING_WEIGHTS = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
-  compPerMatch: 80,
+  compPerMatch: 40,
   availability: 30,
   preferredMode: 15,
   primaryGoal: 12,

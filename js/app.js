@@ -467,17 +467,31 @@ async function handleFindMatch() {
   try {
     // Fetch users from Firebase
     let candidates = [];
-    if (window.FirebaseHelpers) {
+    
+    if (!window.FirebaseHelpers) {
+      throw new Error('Firebase helpers not initialized. Please refresh the page.');
+    }
+    
+    try {
       const profiles = await window.FirebaseHelpers.fetchAllProfiles();
-      candidates = profiles;
-      console.log('✅ Fetched profiles:', candidates.length, candidates);
+      if (profiles && Array.isArray(profiles)) {
+        candidates = profiles.filter(p => p); // Remove nulls
+        console.log('✅ Fetched profiles from Firebase:', candidates.length);
+      } else {
+        console.warn('⚠️ FirebaseHelpers.fetchAllProfiles returned no data');
+      }
+    } catch (fbError) {
+      console.warn('⚠️ Firebase fetch failed, continuing with local users:', fbError);
     }
 
     // Merge with local users
-    candidates = [...candidates, ...AppState.localUsers];
-    console.log('✅ Total candidates after merge:', candidates.length, candidates);
+    if (AppState.localUsers && Array.isArray(AppState.localUsers)) {
+      candidates = [...candidates, ...AppState.localUsers];
+    }
+    console.log('✅ Total candidates after merge:', candidates.length);
 
     if (candidates.length === 0) {
+      window.UI.hideLoading('result');
       document.getElementById('result').innerHTML = '<p class="text-muted">No other users in the matching pool yet. Be the first to create a profile!</p>';
       return;
     }
@@ -486,6 +500,10 @@ async function handleFindMatch() {
     console.log('🔍 Target user for matching:', targetUser);
 
     // Find matches using exclusion list
+    if (!window.Matching || !window.Matching.findRematch) {
+      throw new Error('Matching algorithm not initialized');
+    }
+    
     const matches = window.Matching.findRematch(
       targetUser,
       candidates,
@@ -495,7 +513,9 @@ async function handleFindMatch() {
     console.log('🟢 Matching result:', matches);
 
     if (!matches.matches || matches.matches.length === 0) {
+      window.UI.hideLoading('result');
       document.getElementById('result').innerHTML = '<p class="text-muted">No compatible matches found. Check back later as more users join!</p>';
+      window.UI.showToast('No compatible matches at this time', 'info');
       return;
     }
 
@@ -540,8 +560,8 @@ async function handleFindMatch() {
     });
     
     // Add click handler for rematch button
-    document.getElementById('rematch-btn')?.addEventListener('click', async () => {
-      await handleRematchRequest(bestMatch);
+    document.getElementById('rematch-btn')?.addEventListener('click', () => {
+      showNextMatch();
     });
 
     // Save match to Firebase
@@ -557,12 +577,14 @@ async function handleFindMatch() {
     window.UI.showToast('Match found!', 'success');
   } catch (error) {
     console.error('❌ Error in handleFindMatch:', error);
+    window.UI.hideLoading('result');
     document.getElementById('result').innerHTML = `<p class="text-danger">Error finding match: ${error.message || error}</p>`;
+    window.UI.showToast('Failed to find matches. Please try again.', 'error');
   }
 }
 
 /**
- * Show next match in the list
+ * Show next match in the list (2nd best, 3rd best, etc.)
  */
 function showNextMatch() {
   if (!AppState.currentMatches || AppState.currentMatches.length === 0) {
@@ -573,12 +595,62 @@ function showNextMatch() {
   AppState.currentMatchIndex++;
   
   if (AppState.currentMatchIndex >= AppState.currentMatches.length) {
-    AppState.currentMatchIndex = 0;
-    window.UI.showToast('Showing first match again', 'info');
+    // Cycled through all matches
+    document.getElementById('result').innerHTML = `
+      <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
+        <h3 style="color: var(--error); margin: 0 0 12px 0;">⚠️ No More Matches</h3>
+        <p style="color: var(--text-secondary); margin: 0 0 16px 0;">
+          You've reviewed all compatible matches. Check back later!
+        </p>
+        <button id="start-new-search-btn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          🔄 Start New Search
+        </button>
+      </div>
+    `;
+    document.getElementById('start-new-search-btn')?.addEventListener('click', startNewSearch);
+    window.UI.showToast('You\'ve reviewed all compatible matches', 'info');
+    return;
   }
 
   const match = AppState.currentMatches[AppState.currentMatchIndex];
-  window.UI.renderMatchResult(match, 'result');
+  const qualityBadge = window.Matching.getMatchQualityBadge(match.score);
+  
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = `
+    <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
+      <h3 style="margin: 0 0 8px 0; color: white;">Match #${AppState.currentMatchIndex + 1}</h3>
+      <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
+        <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${match.score} points</p>
+        <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
+          ${qualityBadge.emoji} ${qualityBadge.text}
+        </span>
+      </div>
+      <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
+    </div>
+    <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
+      <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
+      <ul style="line-height: 1.8;">
+        ${match.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
+      </ul>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+        📩 Send Match Request
+      </button>
+      <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+        🔄 Try Another Match
+      </button>
+    </div>
+  `;
+  
+  // Add click handlers
+  document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
+    await sendMatchRequest(match);
+  });
+  
+  document.getElementById('rematch-btn')?.addEventListener('click', () => {
+    showNextMatch();
+  });
 }
 
 /**
@@ -1652,8 +1724,8 @@ async function handleRematchRequest(currentMatch) {
     document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
       await sendMatchRequest(bestRematch);
     });
-    document.getElementById('rematch-btn')?.addEventListener('click', async () => {
-      await handleRematchRequest(bestRematch);
+    document.getElementById('rematch-btn')?.addEventListener('click', () => {
+      showNextMatch();
     });
 
     window.UI.showToast(`Found next match!`, 'success');

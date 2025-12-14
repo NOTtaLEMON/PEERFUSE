@@ -43,6 +43,9 @@ if not GEMINI_API_KEY:
         "Get your API key from: https://makersuite.google.com/app/apikey"
     )
 
+# Log first/last 4 chars of key for debugging (safe to log)
+logger.info(f"Using API key: {GEMINI_API_KEY[:8]}...{GEMINI_API_KEY[-4:]}")
+
 try:
     genai.configure(api_key=GEMINI_API_KEY)
     # Lazy loading: Model initialized on first request to save memory

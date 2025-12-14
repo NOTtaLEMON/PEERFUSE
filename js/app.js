@@ -115,23 +115,7 @@ function showMainInterface(username) {
  * Set up event listeners
  */
 function setupEventListeners() {
-  // Beta warning close button
-  const closeBetaWarning = document.getElementById('close-beta-warning');
-  if (closeBetaWarning) {
-    closeBetaWarning.addEventListener('click', () => {
-      const betaWarning = document.getElementById('beta-warning');
-      if (betaWarning) {
-        betaWarning.style.display = 'none';
-        localStorage.setItem('betaWarningDismissed', 'true');
-      }
-    });
-  }
 
-  // Check if beta warning was previously dismissed
-  const betaWarning = document.getElementById('beta-warning');
-  if (betaWarning && localStorage.getItem('betaWarningDismissed') === 'true') {
-    betaWarning.style.display = 'none';
-  }
 
   // Auth form handlers
   const loginBtn = document.getElementById('login-btn');

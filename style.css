@@ -65,38 +65,38 @@
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Dark Mode - Evening Café Ambiance */
+/* Dark Mode - Evening Zen Lounge */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text-dark: #F5EBE0;
-    --text-light: #C8D4B8;
-    --text-lighter: #8A9A78;
-    --card-bg: #1A2410;          /* Deep forest night */
-    --page-bg: linear-gradient(165deg, #0D1408 0%, #141C0E 50%, #1A2410 100%);
-    --input-bg: #242E18;
-    --hover-bg: #242E18;
-    --border: #3A4830;
-    --border-dark: #242E18;
-    --primary: #DBD564;          /* Matcha lime accent in dark mode */
-    --primary-light: #E5DF8A;
-    --accent: #E5DF8A;
+    --text-dark: #F5F9F0;        /* Very light sage - high contrast */
+    --text-light: #D8E5CC;       /* Light sage - readable */
+    --text-lighter: #B0C5A0;     /* Medium sage - still visible */
+    --card-bg: #1C2816;          /* Slightly lighter forest */
+    --page-bg: linear-gradient(165deg, #12180E 0%, #1A2314 50%, #1C2816 100%);
+    --input-bg: #283820;         /* Lighter for better contrast */
+    --hover-bg: #2F4528;         /* Visible hover state */
+    --border: #4A5A3E;           /* Lighter borders */
+    --border-dark: #3A4830;
+    --primary: #E5E080;          /* Brighter matcha lime */
+    --primary-light: #F0ED9F;
+    --accent: #F0ED9F;
   }
 }
 
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
-  --text-dark: #E8EDE0;
-  --text-light: #C8D4B8;
-  --text-lighter: #8A9A78;
-  --card-bg: #1A2410;
-  --page-bg: linear-gradient(165deg, #0D1408 0%, #141C0E 50%, #1A2410 100%);
-  --input-bg: #242E18;
-  --hover-bg: #242E18;
-  --border: #3A4830;
-  --border-dark: #242E18;
-  --primary: #DBD564;
-  --primary-light: #E5DF8A;
-  --accent: #E5DF8A;
+  --text-dark: #F5F9F0;          /* Very light sage - high contrast */
+  --text-light: #D8E5CC;         /* Light sage - readable */
+  --text-lighter: #B0C5A0;       /* Medium sage - still visible */
+  --card-bg: #1C2816;            /* Slightly lighter forest */
+  --page-bg: linear-gradient(165deg, #12180E 0%, #1A2314 50%, #1C2816 100%);
+  --input-bg: #283820;           /* Lighter for better contrast */
+  --hover-bg: #2F4528;           /* Visible hover state */
+  --border: #4A5A3E;             /* Lighter borders */
+  --border-dark: #3A4830;
+  --primary: #E5E080;            /* Brighter matcha lime */
+  --primary-light: #F0ED9F;
+  --accent: #F0ED9F;
 }
 
 /* ================================

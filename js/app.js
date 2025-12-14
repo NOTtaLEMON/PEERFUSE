@@ -128,10 +128,7 @@ function setupEventListeners() {
     signupBtn.addEventListener('click', handleSignup);
   }
 
-  const setUsernameBtn = document.getElementById('set-username-btn');
-  if (setUsernameBtn) {
-    setUsernameBtn.addEventListener('click', completeSignup);
-  }
+
 
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
@@ -244,9 +241,26 @@ async function handleLogin() {
 async function handleSignup() {
   const email = document.getElementById('auth-email')?.value;
   const password = document.getElementById('auth-password')?.value;
+  const usernameField = document.getElementById('auth-username');
+  const usernameRow = document.getElementById('auth-username-row');
+
+  // Show username field if not already shown
+  if (usernameRow && usernameRow.classList.contains('hidden')) {
+    window.UI.show('auth-username-row');
+    usernameField?.focus();
+    window.UI.showToast('Please enter a display name to complete signup', 'info');
+    return;
+  }
+
+  const username = usernameField?.value?.trim();
 
   if (!email || !password) {
     window.UI.showToast('Please enter email and password', 'error');
+    return;
+  }
+
+  if (!username || username.length < 2) {
+    window.UI.showToast('Please enter a valid username (at least 2 characters)', 'error');
     return;
   }
 
@@ -263,33 +277,6 @@ async function handleSignup() {
 
   try {
     await window.Auth.signUp(email, password);
-    
-    // Show username input
-    window.UI.show('auth-username-row');
-    window.UI.show('set-username-btn');
-    window.UI.hide('login-btn');
-    window.UI.hide('signup-btn');
-    
-    window.UI.showToast('Account created! Please set your display name.', 'success');
-  } catch (error) {
-    console.error('Signup error:', error);
-    const errorMessage = getAuthErrorMessage(error.code);
-    window.UI.showToast(errorMessage, 'error');
-  }
-}
-
-/**
- * Complete signup with username
- */
-async function completeSignup() {
-  const username = document.getElementById('auth-username')?.value;
-
-  if (!username || username.trim().length < 2) {
-    window.UI.showToast('Please enter a valid username (at least 2 characters)', 'error');
-    return;
-  }
-
-  try {
     await window.Auth.updateDisplayName(username);
     window.Auth.LocalStorage.setCurrentUser(username);
     
@@ -299,8 +286,9 @@ async function completeSignup() {
     // Show profile section for first-time setup
     window.UI.show('profile-section');
   } catch (error) {
-    console.error('Error setting username:', error);
-    window.UI.showToast('Error setting username. Please try again.', 'error');
+    console.error('Signup error:', error);
+    const errorMessage = getAuthErrorMessage(error.code);
+    window.UI.showToast(errorMessage, 'error');
   }
 }
 
@@ -334,6 +322,7 @@ async function handleSaveProfile() {
   }
 
   // Get form values with new IDs
+  const newUsername = document.getElementById('profile-username')?.value?.trim() || '';
   const strength1 = document.getElementById('profile-strength1')?.value || '';
   const strength2 = document.getElementById('profile-strength2')?.value || '';
   const weakness1 = document.getElementById('profile-weakness1')?.value || '';
@@ -346,6 +335,11 @@ async function handleSaveProfile() {
   const partnerPreference = document.getElementById('profile-partner-preference')?.value || '';
   const studyPersonality = document.getElementById('profile-study-personality')?.value || '';
   const timezone = document.getElementById('profile-timezone')?.value || '';
+
+  if (!newUsername || newUsername.length < 2) {
+    window.UI.showToast('Please enter a valid username (at least 2 characters)', 'error');
+    return;
+  }
 
   const strengths = [strength1, strength2].filter(s => s.trim()).map(s => s.trim());
   const weaknesses = [weakness1, weakness2].filter(w => w.trim()).map(w => w.trim());
@@ -360,8 +354,21 @@ async function handleSaveProfile() {
     return;
   }
 
+  // Update username if changed
+  if (newUsername !== currentUsername) {
+    try {
+      await window.Auth.updateDisplayName(newUsername);
+      window.Auth.LocalStorage.setCurrentUser(newUsername);
+      window.UI.updateUserWelcome(newUsername);
+    } catch (error) {
+      console.error('Error updating username:', error);
+      window.UI.showToast('Error updating username', 'error');
+      return;
+    }
+  }
+
   const profile = {
-    username: currentUsername,
+    username: newUsername,
     email: AppState.currentUser?.email || firebase.auth().currentUser?.email,
     uid: AppState.currentUser?.uid,
     strengths,
@@ -1479,6 +1486,17 @@ function showSection(sectionId) {
       window.UI.hide(id);
     }
   });
+
+  // If showing profile section, populate username field
+  if (sectionId === 'profile-section') {
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser && currentUser.displayName) {
+      const usernameField = document.getElementById('profile-username');
+      if (usernameField) {
+        usernameField.value = currentUser.displayName;
+      }
+    }
+  }
 }
 
 /**

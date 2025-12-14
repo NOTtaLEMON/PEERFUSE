@@ -170,19 +170,19 @@
           />
 
           <div id="auth-username-row" class="hidden">
-            <label for="auth-username">Display Name</label>
+            <label for="auth-username">Display Name (Username) *</label>
             <input 
               type="text" 
               id="auth-username" 
               placeholder="e.g., Alex Smith" 
               minlength="2"
+              required
             />
           </div>
         </div>
 
         <div class="auth-actions">
           <button type="button" id="signup-btn">Sign Up</button>
-          <button type="button" id="set-username-btn" class="hidden">Complete Signup</button>
           <button type="button" id="login-btn">Login</button>
         </div>
       </form>
@@ -197,6 +197,17 @@
       <p class="text-muted">Tell us about your academic strengths and areas where you need help</p>
       
       <form id="profile-form" onsubmit="return false;">
+        <div>
+          <label for="profile-username">Display Name (Username) *</label>
+          <input 
+            type="text" 
+            id="profile-username" 
+            placeholder="Your display name" 
+            required 
+            minlength="2"
+          />
+        </div>
+        
         <div class="two-col">
           <div>
             <label for="profile-strength1">Strength #1 *</label>

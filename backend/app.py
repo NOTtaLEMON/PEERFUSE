@@ -80,7 +80,7 @@ def get_model():
     global model
     if model is None:
         model = genai.GenerativeModel(
-            'models/gemini-1.5-flash',  # Using 1.5-flash for higher free tier limits
+            'models/gemini-1.5-flash',  # 1.5-flash has better quota limits with billing
             generation_config={
                 'temperature': 0.7,
                 'max_output_tokens': 8192,  # Increased for 20-question quizzes

@@ -111,9 +111,118 @@ function downloadPDF() {
     return;
   }
   
-  // Use browser's print functionality
-  // The print CSS in style.css will handle formatting
-  window.print();
+  // Create a new window for printing with proper styling
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  
+  const styles = `
+    <style>
+      @page {
+        size: A4;
+        margin: 2cm;
+      }
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        line-height: 1.7;
+        color: #1A2410;
+        max-width: 100%;
+        margin: 0;
+        padding: 20px;
+      }
+      h1, h2, h3, h4 {
+        color: #456631;
+        margin-top: 1.5em;
+        margin-bottom: 0.75em;
+        font-weight: 700;
+        page-break-after: avoid;
+      }
+      h1 { font-size: 24pt; }
+      h2 { font-size: 20pt; }
+      h3 { font-size: 16pt; }
+      h4 { font-size: 14pt; }
+      p {
+        margin-bottom: 1em;
+        orphans: 3;
+        widows: 3;
+      }
+      ul, ol {
+        margin: 1em 0;
+        padding-left: 2em;
+      }
+      li {
+        margin-bottom: 0.5em;
+        page-break-inside: avoid;
+      }
+      code {
+        background: #f0f4e8;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+      }
+      pre {
+        background: #f0f4e8;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        page-break-inside: avoid;
+        margin: 1em 0;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+      }
+      strong {
+        font-weight: 700;
+        color: #2D3826;
+      }
+      .title-page {
+        text-align: center;
+        margin-bottom: 2em;
+        page-break-after: always;
+      }
+      .title-page h1 {
+        font-size: 28pt;
+        margin-bottom: 0.5em;
+      }
+      .generated-date {
+        color: #6B7A60;
+        font-size: 11pt;
+      }
+    </style>
+  `;
+  
+  const content = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>${modalTitle}</title>
+        ${styles}
+      </head>
+      <body>
+        <div class="title-page">
+          <h1>${modalTitle}</h1>
+          <p class="generated-date">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}</p>
+        </div>
+        ${modalBody.innerHTML}
+      </body>
+    </html>
+  `;
+  
+  printWindow.document.write(content);
+  printWindow.document.close();
+  
+  // Wait for content to load, then print
+  printWindow.onload = function() {
+    setTimeout(() => {
+      printWindow.print();
+      // Don't close immediately - let user choose to save
+    }, 250);
+  };
 }
 
 /**
@@ -323,8 +432,61 @@ function setupAIEventListeners() {
     }
   });
   
+  // Initialize modal resize functionality
+  initModalResize();
+  
   listenersInitialized = true;
   console.log('=== AI event listeners setup complete ===');
+}
+
+/**
+ * Initialize modal resizing functionality
+ */
+function initModalResize() {
+  const modal = document.getElementById('ai-content-modal');
+  const modalContent = document.getElementById('modal-content-resizable');
+  const resizeHandle = document.querySelector('.modal-resize-handle');
+  
+  if (!modal || !modalContent || !resizeHandle) return;
+  
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+  
+  resizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = modalContent.offsetWidth;
+    
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    const deltaX = startX - e.clientX; // Reversed because handle is on left
+    const newWidth = startWidth + deltaX;
+    
+    // Min width: 400px, Max width: 90% of window
+    const minWidth = 400;
+    const maxWidth = window.innerWidth * 0.9;
+    
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      modalContent.style.width = newWidth + 'px';
+      modalContent.style.maxWidth = newWidth + 'px';
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
 }
 
 /**

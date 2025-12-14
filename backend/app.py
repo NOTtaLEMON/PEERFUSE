@@ -287,39 +287,26 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
 
-        prompt = f"""Create a 20-question multiple choice quiz. Output ONLY the questions in the exact format shown below. Do NOT add any introduction or commentary.
+        prompt = f"""You MUST create EXACTLY 20 questions. Not 5, not 10, but TWENTY (20) questions total.
 
-STUDENT PROFILE:
-Strengths: {strengths_text}
-Weaknesses: {weaknesses_text}
+STUDENT: Strengths: {strengths_text} | Weaknesses: {weaknesses_text}
 
-REQUIREMENTS:
-- Generate ALL 20 questions (Questions 1-20)
-- Questions 1-10: Test STRENGTHS - moderately challenging
-- Questions 11-20: Test WEAKNESSES - slightly easier difficulty
-- Each question: 4 options (A/B/C/D), correct answer, brief explanation
+MANDATORY: Generate questions 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, and 20.
 
-EXACT FORMAT (use this for every question):
-
-Question 1 [STRENGTH - HARD]
+FORMAT for EVERY question:
+Question [N] [STRENGTH/WEAKNESS - DIFFICULTY]
 [Question text]?
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
-Correct Answer: [Letter]
+A) [Option]
+B) [Option]
+C) [Option]
+D) [Option]
+Correct Answer: [A/B/C/D]
 Explanation: [Brief explanation]
 
-Question 2 [STRENGTH - MEDIUM]
-[Question text]?
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
-Correct Answer: [Letter]
-Explanation: [Brief explanation]
+Questions 1-10: STRENGTHS ({strengths_text}) - challenging
+Questions 11-20: WEAKNESSES ({weaknesses_text}) - easier
 
-Continue this pattern through Question 20. Generate all questions now:"""
+GENERATE ALL 20 NOW - DO NOT STOP UNTIL YOU REACH QUESTION 20:"""
 
         response = safe_generate_content(prompt)
         response_text = response.text if hasattr(response, 'text') else str(response)

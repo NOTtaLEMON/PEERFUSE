@@ -70,8 +70,8 @@ const ThemeManager = {
   },
   
   // Update toggle button icon
-  updateToggleIcon(theme = null) {
-    const button = document.getElementById('theme-toggle');
+  updateToggleIcon(theme = null, buttonId = 'theme-toggle') {
+    const button = document.getElementById(buttonId);
     if (!button) return;
     
     const icon = button.querySelector('.theme-icon');
@@ -91,8 +91,8 @@ const ThemeManager = {
   },
   
   // Animate the toggle icon
-  animateToggleIcon() {
-    const button = document.getElementById('theme-toggle');
+  animateToggleIcon(buttonId = 'theme-toggle') {
+    const button = document.getElementById(buttonId);
     if (!button) return;
     
     const icon = button.querySelector('.theme-icon');
@@ -105,17 +105,24 @@ const ThemeManager = {
   },
   
   // Setup toggle button click listener
-  setupToggleButton() {
-    const button = document.getElementById('theme-toggle');
+  setupToggleButton(buttonId = 'theme-toggle') {
+    const button = document.getElementById(buttonId);
     if (button) {
       button.addEventListener('click', (e) => {
         e.preventDefault();
         this.toggle();
+        this.animateToggleIcon(buttonId);
       });
       
       // Update icon on initial load
-      this.updateToggleIcon();
+      this.updateToggleIcon(null, buttonId);
     }
+  },
+  
+  // Initialize theme toggle for a specific button (used for multiple pages)
+  initThemeToggle(buttonId) {
+    this.setupToggleButton(buttonId);
+    this.updateToggleIcon(null, buttonId);
   },
   
   // Listen for system theme changes
@@ -137,3 +144,6 @@ if (document.readyState === 'loading') {
 } else {
   ThemeManager.init();
 }
+
+// Export for use in other scripts
+window.ThemeManager = ThemeManager;

@@ -938,30 +938,28 @@ function parseQuizContent(content) {
   const questions = [];
   
   console.log('🔍 Starting quiz parsing...');
+  console.log('📄 Content length:', content.length);
   
-  // Split by "---" separator first if present, otherwise split by "Question N" pattern
+  // Primary strategy: Split by "Question N" pattern (most reliable)
   let blocks = [];
   
-  if (content.includes('---')) {
-    // Split by separator and filter empties
-    blocks = content.split(/---+/).map(b => b.trim()).filter(b => b && /Question\s*\d+/i.test(b));
-    console.log('📦 Split by --- separator, found blocks:', blocks.length);
-  } else {
-    // Use regex to capture each Question block
-    const regex = /Question\s*\d+[^\n]*\n([\s\S]*?)(?=Question\s*\d+|$)/gi;
-    let match;
-    while ((match = regex.exec(content)) !== null) {
-      blocks.push(match[0].trim());
-    }
-    console.log('📦 Split by Question pattern, found blocks:', blocks.length);
+  // Match "Question 1", "Question 2", etc. at the start of a line
+  const questionMatches = content.match(/Question\s+\d+\s*\[?[^\n]*/gi);
+  if (questionMatches) {
+    console.log('🔢 Found question headers:', questionMatches.length);
   }
-
-  // Fallback: if regex found nothing, try splitting by lines that start with "Question"
+  
+  // Split content at each "Question N" marker
+  const parts = content.split(/(?=Question\s+\d+)/i);
+  blocks = parts
+    .map(b => b.trim())
+    .filter(b => b && /^Question\s+\d+/i.test(b));
+  
+  console.log('📦 Split into blocks:', blocks.length);
+  
   if (blocks.length === 0) {
-    const parts = content.split(/Question\s*\d+/i).filter(b => b.trim());
-    // Re-add "Question N" prefix for each part
-    blocks = parts.map((p, i) => `Question ${i + 1}\n${p.trim()}`);
-    console.log('📦 Fallback split, found blocks:', blocks.length);
+    console.error('❌ No question blocks found in content!');
+    return [];
   }
 
   blocks.forEach((block, blockIndex) => {
@@ -999,22 +997,29 @@ function parseQuizContent(content) {
       return;
     }
 
-    // Extract answer options (accept formats like "A) ...", "A. ...", "A)" with or without spaces)
+    // Extract answer options (accept formats like "A) ...", "A. ...", "A:" with or without spaces)
     const options = [];
     let correctAnswer = '';
     let explanation = '';
 
-    const optionRegex = /^([A-D])\s*[\)\.]\s*(.*)$/i;
-    const correctRegex = /Correct\s*Answer\s*[:\-]?\s*([A-D])/i;
+    // More flexible option regex that handles various formats
+    const optionRegex = /^([A-D])\s*[\)\.:\-]\s*(.*)$/i;
+    const correctRegex = /(?:Correct\s*Answer|Answer)\s*[:\-]?\s*([A-D])/i;
     const explanationRegex = /Explanation\s*[:\-]?\s*(.+)/i;
 
     for (let i = questionLineIndex + 1; i < lines.length; i++) {
       const line = lines[i];
 
+      // Skip "---" separators
+      if (line === '---' || line.startsWith('---')) continue;
+
       const optMatch = line.match(optionRegex);
       if (optMatch) {
         // optMatch[1] = letter, optMatch[2] = option text
-        options.push(optMatch[2].trim());
+        const optionText = optMatch[2].trim();
+        if (optionText) {  // Only add non-empty options
+          options.push(optionText);
+        }
         continue;
       }
 
@@ -1031,9 +1036,9 @@ function parseQuizContent(content) {
       }
     }
 
-    // If correctAnswer not found in lines, also try to find a single-letter answer anywhere in the block labeled "Correct"
+    // If correctAnswer not found in lines, also try to find it anywhere in the block
     if (!correctAnswer) {
-      const anyCorr = block.match(/Correct\s*Answer\s*[:\-]?\s*([A-D])/i);
+      const anyCorr = block.match(/(?:Correct\s*Answer|Answer)\s*[:\-]?\s*([A-D])/i);
       if (anyCorr && anyCorr[1]) correctAnswer = anyCorr[1].toUpperCase();
     }
 

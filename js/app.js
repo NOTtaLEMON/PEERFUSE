@@ -523,9 +523,9 @@ async function handleFindMatch() {
         </div>
         <p style="margin: 0; color: #000000;"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
       </div>
-      <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
-        <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
-        <ul style="line-height: 1.8;">
+      <div style="padding: 16px; background: transparent; border-radius: var(--radius); margin-bottom: 16px;">
+        <h4 style="color: #FFFFFF; margin-bottom: 12px;">Why you match:</h4>
+        <ul style="line-height: 1.8; color: #FFFFFF;">
           ${bestMatch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
         </ul>
       </div>
@@ -612,9 +612,9 @@ function showNextMatch() {
       </div>
       <p style="margin: 0; color: #000000;"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
     </div>
-    <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
-      <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
-      <ul style="line-height: 1.8;">
+    <div style="padding: 16px; background: transparent; border-radius: var(--radius); margin-bottom: 16px;">
+      <h4 style="color: #FFFFFF; margin-bottom: 12px;">Why you match:</h4>
+      <ul style="line-height: 1.8; color: #FFFFFF;">
         ${match.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
       </ul>
     </div>
@@ -1744,9 +1744,9 @@ async function handleRematchRequest(currentMatch) {
         </div>
         <p style="margin: 0; color: #000000;"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
       </div>
-      <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
-        <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
-        <ul style="line-height: 1.8;">
+      <div style="padding: 16px; background: transparent; border-radius: var(--radius); margin-bottom: 16px;">
+        <h4 style="color: #FFFFFF; margin-bottom: 12px;">Why you match:</h4>
+        <ul style="line-height: 1.8; color: #FFFFFF;">
           ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
         </ul>
       </div>

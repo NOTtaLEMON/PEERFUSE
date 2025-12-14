@@ -444,10 +444,9 @@ function setupAIEventListeners() {
  */
 function initModalResize() {
   const modal = document.getElementById('ai-content-modal');
-  const modalContent = document.getElementById('modal-content-resizable');
   const resizeHandle = document.querySelector('.modal-resize-handle');
   
-  if (!modal || !modalContent || !resizeHandle) return;
+  if (!modal || !resizeHandle) return;
   
   let isResizing = false;
   let startX = 0;
@@ -456,7 +455,7 @@ function initModalResize() {
   resizeHandle.addEventListener('mousedown', (e) => {
     isResizing = true;
     startX = e.clientX;
-    startWidth = modalContent.offsetWidth;
+    startWidth = modal.offsetWidth;
     
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
@@ -475,8 +474,7 @@ function initModalResize() {
     const maxWidth = window.innerWidth * 0.9;
     
     if (newWidth >= minWidth && newWidth <= maxWidth) {
-      modalContent.style.width = newWidth + 'px';
-      modalContent.style.maxWidth = newWidth + 'px';
+      modal.style.width = newWidth + 'px';
     }
   });
   

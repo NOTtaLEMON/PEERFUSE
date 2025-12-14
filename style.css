@@ -1625,6 +1625,7 @@ a.skip-to-main:focus {
   top: 0;
   right: 0;
   width: 500px;
+  max-width: 90vw;
   height: 100vh;
   background: var(--card-bg);
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
@@ -1633,6 +1634,8 @@ a.skip-to-main:focus {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  resize: horizontal;
+  overflow: auto;
 }
 
 .modal.hidden {

@@ -280,17 +280,46 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
         
-                prompt = f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:
-
-**Strengths:** {strengths_text}
-**Weaknesses:** {weaknesses_text}
+          prompt = (
+                f"""Generate a 5-question multiple choice assessment quiz for a student with the following profile:\n"
+                f"""
+Strengths: {strengths_text}
+Weaknesses: {weaknesses_text}
 
 Create exactly 5 multiple choice questions following these rules:
 
-1. **Questions 1-3:** Focus on their STRENGTHS ({strengths_text})
+1. Questions 1-3: Focus on their STRENGTHS ({strengths_text})
     - Make these moderately challenging to hard (they should know this well)
     - Test deeper understanding, not just memorization
     - Mix difficulty: 1 medium, 2 hard questions
+
+2. Questions 4-5: Focus on their WEAKNESSES ({weaknesses_text})
+    - Make these easier to medium difficulty (they're still learning)
+    - Test fundamental concepts and basics
+    - Mix difficulty: 1 easy, 1 medium question
+
+For EACH question, provide:
+- Question number (1-5)
+- The question text
+- 4 answer options labeled A, B, C, D
+- Indicate the correct answer
+- Brief explanation of why it's correct
+
+Format each question EXACTLY like this:
+
+Question 1 [STRENGTH - HARD]
+Question text here?
+A) Option 1
+B) Option 2
+C) Option 3
+D) Option 4
+Correct Answer: B
+Explanation: Brief explanation here.
+
+---
+
+Make questions specific, practical, and relevant to each topic. Ensure variety in question types (conceptual, application, problem-solving)."""
+          )
 
 2. **Questions 4-5:** Focus on their WEAKNESSES ({weaknesses_text})
     - Make these easier to medium difficulty (they're still learning)

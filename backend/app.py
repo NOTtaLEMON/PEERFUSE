@@ -287,47 +287,41 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
 
-        prompt = f"""
-Generate a 20-question multiple choice assessment quiz for a student with the following profile:
+        prompt = f"""You are creating a comprehensive 20-question assessment quiz. You MUST generate ALL 20 questions.
 
-Strengths: {strengths_text}
-Weaknesses: {weaknesses_text}
+Student Profile:
+- Strengths: {strengths_text}
+- Weaknesses: {weaknesses_text}
 
-Create exactly 20 multiple choice questions following these rules:
+CRITICAL REQUIREMENTS:
+1. Generate EXACTLY 20 questions - no more, no less
+2. Questions 1-10 MUST focus on STRENGTHS ({strengths_text}) - make them moderately challenging
+3. Questions 11-20 MUST focus on WEAKNESSES ({weaknesses_text}) - make them slightly easier
+4. Each question MUST have exactly 4 answer options (A, B, C, D)
+5. Use the EXACT format shown below for EVERY question
 
-1. Questions 1-10: Focus on their STRENGTHS ({strengths_text})
-    - Make these moderately challenging to hard (they should know this well)
-    - Test deeper understanding, not just memorization
-    - Mix difficulty levels across the 10 questions
+REQUIRED FORMAT FOR EACH QUESTION:
 
-2. Questions 11-20: Focus on their WEAKNESSES ({weaknesses_text})
-    - Make these easier to medium difficulty (they're still learning)
-    - Test fundamental concepts and basics
-    - Mix difficulty levels across the 10 questions
+Question [NUMBER] [STRENGTH/WEAKNESS - DIFFICULTY]
+[Question text]
+A) [First option]
+B) [Second option]
+C) [Third option]
+D) [Fourth option]
+Correct Answer: [A/B/C/D]
+Explanation: [Brief explanation]
 
-For EACH question, provide:
-- Question number (1-20)
-- The question text
-- 4 answer options labeled A, B, C, D
-- Indicate the correct answer
-- Brief explanation of why it's correct
-
-Format each question EXACTLY like this:
-
+EXAMPLE:
 Question 1 [STRENGTH - HARD]
-Question text here?
-A) Option 1
-B) Option 2
-C) Option 3
-D) Option 4
-Correct Answer: B
-Explanation: Brief explanation here.
+What statistical test compares means of three or more independent groups?
+A) Paired t-test
+B) Independent samples t-test
+C) One-way ANOVA
+D) Chi-squared test
+Correct Answer: C
+Explanation: One-way ANOVA is used to compare means of three or more independent groups.
 
----
-
-Make questions specific, practical, and relevant to each topic.
-Ensure variety in question types (conceptual, application, problem-solving).
-"""
+NOW GENERATE ALL 20 QUESTIONS:"""
 
         response = safe_generate_content(prompt)
         response_text = response.text if hasattr(response, 'text') else str(response)

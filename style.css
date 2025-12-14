@@ -68,35 +68,35 @@
 /* Dark Mode - Evening Zen Lounge */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text-dark: #F5F9F0;        /* Very light sage - high contrast */
-    --text-light: #D8E5CC;       /* Light sage - readable */
-    --text-lighter: #B0C5A0;     /* Medium sage - still visible */
+    --text-dark: #FFFFFF;        /* Pure white for maximum contrast */
+    --text-light: #F0FBE8;       /* Very light mint green */
+    --text-lighter: #E0F5D0;     /* Light mint green */
     --card-bg: #1C2816;          /* Slightly lighter forest */
     --page-bg: linear-gradient(165deg, #12180E 0%, #1A2314 50%, #1C2816 100%);
     --input-bg: #283820;         /* Lighter for better contrast */
     --hover-bg: #2F4528;         /* Visible hover state */
-    --border: #4A5A3E;           /* Lighter borders */
-    --border-dark: #3A4830;
-    --primary: #E5E080;          /* Brighter matcha lime */
-    --primary-light: #F0ED9F;
-    --accent: #F0ED9F;
+    --border: #6A7A5E;           /* Much lighter borders */
+    --border-dark: #4A5A3E;
+    --primary: #F5FF90;          /* Very bright lime */
+    --primary-light: #FFFFE0;
+    --accent: #FFFFE0;
   }
 }
 
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
-  --text-dark: #F5F9F0;          /* Very light sage - high contrast */
-  --text-light: #D8E5CC;         /* Light sage - readable */
-  --text-lighter: #B0C5A0;       /* Medium sage - still visible */
+  --text-dark: #FFFFFF;          /* Pure white for maximum contrast */
+  --text-light: #F0FBE8;         /* Very light mint green */
+  --text-lighter: #E0F5D0;       /* Light mint green */
   --card-bg: #1C2816;            /* Slightly lighter forest */
   --page-bg: linear-gradient(165deg, #12180E 0%, #1A2314 50%, #1C2816 100%);
   --input-bg: #283820;           /* Lighter for better contrast */
   --hover-bg: #2F4528;           /* Visible hover state */
-  --border: #4A5A3E;             /* Lighter borders */
-  --border-dark: #3A4830;
-  --primary: #E5E080;            /* Brighter matcha lime */
-  --primary-light: #F0ED9F;
-  --accent: #F0ED9F;
+  --border: #6A7A5E;             /* Much lighter borders */
+  --border-dark: #4A5A3E;
+  --primary: #F5FF90;            /* Very bright lime */
+  --primary-light: #FFFFE0;
+  --accent: #FFFFE0;
 }
 
 /* ================================

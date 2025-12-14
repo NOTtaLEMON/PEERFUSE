@@ -804,6 +804,12 @@ async function handleStartPreQuiz() {
 
     const data = await response.json();
     
+    console.log('🎯 Quiz API response:', data);
+    
+    if (!data.content) {
+      throw new Error('No quiz content returned from API');
+    }
+    
     // Parse and display questions
     displayPreQuizQuestions(data.content);
     
@@ -883,8 +889,17 @@ function cleanGeminiText(text) {
 function displayPreQuizQuestions(quizContent) {
   const questionsDiv = document.getElementById('prequiz-questions');
   
+  console.log('🔍 Quiz content received:', quizContent);
+  
   // Parse the quiz content
   const questions = parseQuizContent(quizContent);
+  
+  console.log('✅ Parsed questions:', questions.length, questions);
+  
+  if (questions.length === 0) {
+    questionsDiv.innerHTML = '<p class="text-danger">Failed to parse quiz questions. Please try again.</p>';
+    return;
+  }
   
   let html = '<div class="quiz-questions">';
   
@@ -921,33 +936,32 @@ function displayPreQuizQuestions(quizContent) {
  */
 function parseQuizContent(content) {
   const questions = [];
-  // Use a robust regex to capture each Question block including everything until the next Question
-  // This handles variations like "Question 1 [STRENGTH - HARD]" and preserves bracketed difficulty
-  const regex = /Question\s*\d+[^\n]*[\n\r]*([\s\S]*?)(?=Question\s*\d+|$)/gi;
-  let match;
-  const blocks = [];
-
-  // First, capture any leading headers (e.g., "Question 1 [STRENGTH - HARD]") so we can preserve difficulty
-  const headerRegex = /Question\s*(\d+)\s*([^\n\r]*)/i;
-
-  // Iterate through matches and build blocks that include header and body
-  while ((match = regex.exec(content)) !== null) {
-    const fullMatch = match[0];
-    // Try to find the header that precedes this match
-    const headerSearchStart = Math.max(0, match.index - 60);
-    const headerSlice = content.slice(headerSearchStart, match.index + 1);
-    const headerMatch = headerSlice.match(headerRegex);
-    let header = '';
-    if (headerMatch) {
-      header = headerMatch[0];
+  
+  console.log('🔍 Starting quiz parsing...');
+  
+  // Split by "---" separator first if present, otherwise split by "Question N" pattern
+  let blocks = [];
+  
+  if (content.includes('---')) {
+    // Split by separator and filter empties
+    blocks = content.split(/---+/).map(b => b.trim()).filter(b => b && /Question\s*\d+/i.test(b));
+    console.log('📦 Split by --- separator, found blocks:', blocks.length);
+  } else {
+    // Use regex to capture each Question block
+    const regex = /Question\s*\d+[^\n]*\n([\s\S]*?)(?=Question\s*\d+|$)/gi;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      blocks.push(match[0].trim());
     }
-    blocks.push((header + '\n' + match[1]).trim());
+    console.log('📦 Split by Question pattern, found blocks:', blocks.length);
   }
 
   // Fallback: if regex found nothing, try splitting by lines that start with "Question"
   if (blocks.length === 0) {
-    const alt = content.split(/(?:^|\n)Question\s*\d+/i).map(b => b.trim()).filter(b => b);
-    blocks.push(...alt);
+    const parts = content.split(/Question\s*\d+/i).filter(b => b.trim());
+    // Re-add "Question N" prefix for each part
+    blocks = parts.map((p, i) => `Question ${i + 1}\n${p.trim()}`);
+    console.log('📦 Fallback split, found blocks:', blocks.length);
   }
 
   blocks.forEach((block, blockIndex) => {
@@ -1030,7 +1044,13 @@ function parseQuizContent(content) {
     }
   });
 
-  console.log(`Parsed ${questions.length} questions from quiz content`);
+  console.log(`✅ Parsed ${questions.length} questions from quiz content`);
+  console.log('📋 Questions array:', questions);
+  
+  if (questions.length === 0) {
+    console.error('❌ No questions parsed! Raw content:', content);
+  }
+  
   return questions;
 }
 

@@ -29,15 +29,15 @@ const geminiConfig = {
 const appConfig = {
   // Matching algorithm weights
   matchingWeights: {
-    availability: 100,      // Must match for scheduling
-    compPerMatch: 30,       // Each complementary strength/weakness pair
-    preferredMode: 8,       // Chat vs Video preference
-    primaryGoal: 6,         // Learning objectives alignment
-    preferredFrequency: 6,  // Session frequency preference
-    partnerPreference: 4,   // Skill level preference
-    sessionLength: 4,       // Duration preference
-    timeZone: 3,           // Time zone compatibility
-    studyPersonality: 3     // Learning style compatibility
+    compPerMatch: 80,       // Complementary skill matching
+    availability: 30,       // Availability overlap
+    preferredMode: 15,      // Preferred study mode
+    primaryGoal: 12,        // Primary academic goal
+    preferredFrequency: 12, // Session frequency
+    partnerPreference: 10,  // Partner type preference
+    sessionLength: 10,      // Session length
+    timeZone: 10,          // Timezone compatibility
+    studyPersonality: 10    // Study personality
   },
   
   // UI Configuration

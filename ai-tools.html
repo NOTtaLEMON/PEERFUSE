@@ -24,9 +24,13 @@
 <body>
   <!-- Header -->
   <header class="hero">
+    <div class="user-bar" style="justify-content: flex-end;">
+      <button id="theme-toggle-ai" class="theme-toggle" aria-label="Toggle theme">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
     <h1>🤖 PeerFuse AI Tools <span style="font-size: 0.4em; background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; padding: 4px 12px; border-radius: 20px; vertical-align: middle; font-weight: 700; letter-spacing: 1px;">BETA</span></h1>
     <p>Generate personalized study materials powered by Google Gemini AI</p>
-    <!-- User bar removed: no sign-in status shown -->
   </header>
 
   <!-- Main Content -->
@@ -106,12 +110,21 @@
   <!-- PeerFuse JavaScript Modules -->
   <script src="js/config.js"></script>
   <script src="js/matching.js"></script>
+  <script src="js/theme.js"></script>
   <script src="js/ai-tools.js"></script>
   
   <script>
     function goBackToMain() {
       window.location.href = 'index.html';
     }
+    
+    // Initialize theme toggle for AI tools page
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('theme-toggle-ai');
+      if (toggle && window.ThemeManager) {
+        window.ThemeManager.initThemeToggle('theme-toggle-ai');
+      }
+    });
   </script>
 </body>
 </html>

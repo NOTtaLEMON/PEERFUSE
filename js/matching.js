@@ -287,7 +287,8 @@ function getScoreBreakdown(userA, userB) {
   });
 
   if (compCount > 0) {
-    const compScore = compCount * weights.compPerMatch;
+    const MAX_COMPLEMENTARY_SCORE = 80; // Maximum 80 points for complementary skills
+    const compScore = Math.min(compCount * weights.compPerMatch, MAX_COMPLEMENTARY_SCORE);
     total += compScore;
     reasons.push(`✓ ${compCount} complementary skill(s): ${compMatches.join(', ')} (+${compScore})`);
   }

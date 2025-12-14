@@ -5,51 +5,51 @@
    CSS VARIABLES & THEME
    ================================ */
 :root {
-  /* Coffee Shop Color Palette */
-  /* Primary: Warm espresso browns */
-  --primary: #6F4E37;           /* Coffee brown */
-  --primary-dark: #5D4037;      /* Dark roast */
-  --primary-light: #8B7355;     /* Latte */
-  --primary-rgb: 111, 78, 55;
+  /* Rich Coffee House Color Palette */
+  /* Primary: Deep chocolate espresso */
+  --primary: #3D2314;           /* Rich dark chocolate */
+  --primary-dark: #2A1810;      /* Deep espresso */
+  --primary-light: #5C3D2E;     /* Milk chocolate */
+  --primary-rgb: 61, 35, 20;
   
-  /* Accent: Warm amber/gold like cafe lighting */
-  --accent: #C8A97E;            /* Warm cream/caramel */
-  --accent-light: #DBC4A0;      /* Light cream */
-  --accent-dark: #A67B5B;       /* Caramel */
+  /* Accent: Warm gold/amber like café lighting */
+  --accent: #D4A84B;            /* Rich gold/caramel */
+  --accent-light: #E8C77B;      /* Light gold */
+  --accent-dark: #B8923D;       /* Deep amber */
   
-  /* Neutral Colors - Warm undertones */
-  --muted: #8B8178;             /* Warm gray */
-  --text-dark: #3E3029;         /* Dark chocolate */
-  --text-light: #5C5046;        /* Medium brown */
-  --text-lighter: #9E948A;      /* Light warm gray */
-  --border: #E8E0D5;            /* Cream border */
-  --border-dark: #D4C8BA;       /* Darker cream */
+  /* Neutral Colors - Warm peachy cream undertones */
+  --muted: #8C7B6B;             /* Warm taupe */
+  --text-dark: #2D1F14;         /* Almost black coffee */
+  --text-light: #5C4A3D;        /* Medium roast */
+  --text-lighter: #A69485;      /* Creamy gray */
+  --border: #E8DCD0;            /* Warm cream border */
+  --border-dark: #D4C4B4;       /* Latte foam */
   
-  /* Background Colors - Paper & wood textures feel */
-  --card-bg: #FFFAF5;           /* Warm white/cream paper */
-  --page-bg: linear-gradient(165deg, #F5EDE4 0%, #EDE4D8 50%, #E8DED0 100%);
-  --input-bg: #FFFCF8;          /* Soft cream */
-  --hover-bg: #F9F3EB;          /* Slightly darker cream on hover */
+  /* Background Colors - Peachy cream warmth */
+  --card-bg: #FDF8F3;           /* Warm cream paper */
+  --page-bg: linear-gradient(165deg, #F5E6D8 0%, #F0DFD0 50%, #EBD8C8 100%);
+  --input-bg: #FFFBF7;          /* Soft warm white */
+  --hover-bg: #F7EEE5;          /* Slightly darker cream on hover */
   
   /* Semantic Colors - Muted & cozy */
-  --success: #6B8E6B;           /* Sage green - like plants in a cafe */
-  --success-light: #E8F0E8;
-  --error: #B85C5C;             /* Muted terracotta red */
-  --error-light: #F5E8E8;
-  --warning: #C9A857;           /* Warm amber */
-  --warning-light: #FDF8E8;
-  --info: #7A8B9A;              /* Muted steel blue */
-  --info-light: #EDF1F5;
+  --success: #5D7A5D;           /* Forest green */
+  --success-light: #E5EDE5;
+  --error: #A84B4B;             /* Deep burgundy */
+  --error-light: #F5E5E5;
+  --warning: #D4A84B;           /* Matches accent gold */
+  --warning-light: #FDF5E5;
+  --info: #6B7D8A;              /* Muted slate */
+  --info-light: #EDF1F4;
   
   /* Spacing & Layout */
   --radius: 16px;               /* Softer, more rounded corners */
   --radius-sm: 10px;
   --radius-lg: 24px;
-  --shadow-sm: 0 2px 4px rgba(62, 48, 41, 0.04);
-  --shadow: 0 4px 16px rgba(62, 48, 41, 0.08);
-  --shadow-lg: 0 8px 32px rgba(62, 48, 41, 0.1);
-  --shadow-xl: 0 16px 48px rgba(62, 48, 41, 0.12);
-  --glow: 0 0 24px rgba(200, 169, 126, 0.2);
+  --shadow-sm: 0 2px 4px rgba(45, 31, 20, 0.06);
+  --shadow: 0 4px 16px rgba(45, 31, 20, 0.1);
+  --shadow-lg: 0 8px 32px rgba(45, 31, 20, 0.12);
+  --shadow-xl: 0 16px 48px rgba(45, 31, 20, 0.15);
+  --glow: 0 0 24px rgba(212, 168, 75, 0.25);
   
   /* Transitions - Smooth & Performant */
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -64,33 +64,35 @@
 /* Dark Mode - Evening Café Ambiance */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --text-dark: #F5EDE4;
-    --text-light: #D4C8BA;
-    --text-lighter: #A69B8E;
-    --card-bg: #2D2520;          /* Dark wood */
-    --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
-    --input-bg: #3A322B;
-    --hover-bg: #3A322B;
-    --border: #4A403A;
-    --border-dark: #3A322B;
-    --primary: #C8A97E;
-    --primary-light: #DBC4A0;
+    --text-dark: #F5EBE0;
+    --text-light: #D4C4B4;
+    --text-lighter: #A69080;
+    --card-bg: #2A1E16;          /* Rich dark wood */
+    --page-bg: linear-gradient(165deg, #1A1210 0%, #221812 50%, #2A1E16 100%);
+    --input-bg: #382A20;
+    --hover-bg: #382A20;
+    --border: #4A382C;
+    --border-dark: #382A20;
+    --primary: #D4A84B;          /* Gold accent in dark mode */
+    --primary-light: #E8C77B;
+    --accent: #E8C77B;
   }
 }
 
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
-  --text-dark: #F5EDE4;
-  --text-light: #D4C8BA;
-  --text-lighter: #A69B8E;
-  --card-bg: #2D2520;
-  --page-bg: linear-gradient(165deg, #1A1512 0%, #241E19 50%, #2D2520 100%);
-  --input-bg: #3A322B;
-  --hover-bg: #3A322B;
-  --border: #4A403A;
-  --border-dark: #3A322B;
-  --primary: #C8A97E;
-  --primary-light: #DBC4A0;
+  --text-dark: #F5EBE0;
+  --text-light: #D4C4B4;
+  --text-lighter: #A69080;
+  --card-bg: #2A1E16;
+  --page-bg: linear-gradient(165deg, #1A1210 0%, #221812 50%, #2A1E16 100%);
+  --input-bg: #382A20;
+  --hover-bg: #382A20;
+  --border: #4A382C;
+  --border-dark: #382A20;
+  --primary: #D4A84B;
+  --primary-light: #E8C77B;
+  --accent: #E8C77B;
 }
 
 /* ================================
@@ -138,14 +140,14 @@ body::before {
       45deg,
       transparent 0px,
       transparent 2px,
-      rgba(139, 113, 85, 0.01) 2px,
-      rgba(139, 113, 85, 0.01) 4px
+      rgba(61, 35, 20, 0.008) 2px,
+      rgba(61, 35, 20, 0.008) 4px
     ),
-    /* Warm ambient light from top - like cafe lighting */
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200, 169, 126, 0.15) 0%, transparent 60%),
-    /* Corner warmth - like lamp light */
-    radial-gradient(circle at 10% 90%, rgba(200, 169, 126, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 10%, rgba(200, 169, 126, 0.06) 0%, transparent 40%);
+    /* Warm golden ambient light from top - like café pendant lights */
+    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(212, 168, 75, 0.12) 0%, transparent 50%),
+    /* Soft corner warmth */
+    radial-gradient(circle at 0% 100%, rgba(212, 168, 75, 0.06) 0%, transparent 35%),
+    radial-gradient(circle at 100% 0%, rgba(212, 168, 75, 0.04) 0%, transparent 35%);
   pointer-events: none;
   z-index: 0;
 }

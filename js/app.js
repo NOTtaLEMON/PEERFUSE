@@ -513,15 +513,15 @@ async function handleFindMatch() {
     const qualityBadge = window.Matching.getMatchQualityBadge(bestMatch.score);
     const resultDiv = document.getElementById('result');
     resultDiv.innerHTML = `
-      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
-        <h3 style="margin: 0 0 8px 0; color: white;">Best Match Found!</h3>
+      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-dark); border-radius: var(--radius); margin-bottom: 16px;">
+        <h3 style="margin: 0 0 8px 0; color: var(--text-dark);">Best Match Found!</h3>
         <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-          <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestMatch.score} points</p>
+          <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-dark);">${bestMatch.score} points</p>
           <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
             ${qualityBadge.emoji} ${qualityBadge.text}
           </span>
         </div>
-        <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
+        <p style="margin: 0; color: var(--text-dark);"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
       </div>
       <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
         <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
@@ -533,7 +533,7 @@ async function handleFindMatch() {
         <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
           📩 Send Match Request
         </button>
-        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-dark); border: none; border-radius: var(--radius); cursor: pointer;">
           🔄 Try Another Match
         </button>
       </div>
@@ -602,15 +602,15 @@ function showNextMatch() {
   
   const resultDiv = document.getElementById('result');
   resultDiv.innerHTML = `
-    <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
-      <h3 style="margin: 0 0 8px 0; color: white;">Match #${AppState.currentMatchIndex + 1}</h3>
+    <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-dark); border-radius: var(--radius); margin-bottom: 16px;">
+      <h3 style="margin: 0 0 8px 0; color: var(--text-dark);">Match #${AppState.currentMatchIndex + 1}</h3>
       <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-        <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${match.score} points</p>
+        <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-dark);">${match.score} points</p>
         <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
           ${qualityBadge.emoji} ${qualityBadge.text}
         </span>
       </div>
-      <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
+      <p style="margin: 0; color: var(--text-dark);"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
     </div>
     <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
       <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
@@ -622,7 +622,7 @@ function showNextMatch() {
       <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
         📩 Send Match Request
       </button>
-      <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+      <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-dark); border: none; border-radius: var(--radius); cursor: pointer;">
         🔄 Try Another Match
       </button>
     </div>
@@ -1174,10 +1174,10 @@ function displayPreQuizResults(profile) {
   if (!profile.preQuizScore && profile.preQuizScore !== 0) return;
   
   scoreDiv.innerHTML = `
-    <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
-      <h2 style="font-size: 48px; margin: 0; color: white;">${profile.preQuizScore}%</h2>
-      <p style="margin: 8px 0 0 0; color: white;">Previous Score: ${profile.preQuizCorrect} / ${profile.preQuizTotal}</p>
-      <p style="font-size: 12px; color: rgba(255,255,255,0.8); margin: 4px 0 0 0;">
+    <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-dark); border-radius: var(--radius); margin-bottom: 16px;">
+      <h2 style="font-size: 48px; margin: 0; color: var(--text-dark);">${profile.preQuizScore}%</h2>
+      <p style="margin: 8px 0 0 0; color: var(--text-dark);">Previous Score: ${profile.preQuizCorrect} / ${profile.preQuizTotal}</p>
+      <p style="font-size: 12px; color: var(--text-light); margin: 4px 0 0 0;">
         ${new Date(profile.preQuizTimestamp).toLocaleDateString()}
       </p>
     </div>
@@ -1734,15 +1734,15 @@ async function handleRematchRequest(currentMatch) {
       <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--success); border-radius: 4px; margin-bottom: 16px;">
         <p style="color: var(--success); margin: 0; font-weight: 600;">✓ Found alternative match!</p>
       </div>
-      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
-        <h3 style="margin: 0 0 8px 0; color: white;">Next Match</h3>
+      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-dark); border-radius: var(--radius); margin-bottom: 16px;">
+        <h3 style="margin: 0 0 8px 0; color: var(--text-dark);">Next Match</h3>
         <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-          <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestRematch.score} points</p>
+          <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-dark);">${bestRematch.score} points</p>
           <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
             ${qualityBadge.emoji} ${qualityBadge.text}
           </span>
         </div>
-        <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
+        <p style="margin: 0; color: var(--text-dark);"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
       </div>
       <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
         <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
@@ -1754,7 +1754,7 @@ async function handleRematchRequest(currentMatch) {
         <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
           📩 Send Match Request
         </button>
-        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-dark); border: none; border-radius: var(--radius); cursor: pointer;">
           🔄 Try Another Match
         </button>
       </div>

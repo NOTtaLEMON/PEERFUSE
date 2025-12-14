@@ -481,20 +481,86 @@ async function handleFindMatch() {
       return;
     }
 
-    // Find matches
-    const matches = window.Matching.findBestMatch(targetUser, candidates);
+async function findMatch() {
+  try {
+    // Get current user
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) {
+      window.UI.showToast('Please log in first', 'error');
+      return;
+    }
 
-    if (!matches || matches.length === 0) {
+    window.UI.showToast('Finding your perfect study buddy...', 'info');
+    document.getElementById('result').innerHTML = '<p class="text-muted" style="text-align: center; padding: 40px;">⏳ Searching for compatible matches...</p>';
+
+    const userKey = currentUser.uid;
+
+    // Fetch current user profile
+    const userSnapshot = await firebase.database().ref(`users/${userKey}`).once('value');
+    let targetUser = userSnapshot.val();
+
+    if (!targetUser) {
+      // Fallback to profiles
+      const profileSnapshot = await firebase.database().ref(`profiles/${userKey}`).once('value');
+      targetUser = profileSnapshot.val();
+    }
+
+    if (!targetUser) {
+      window.UI.showToast('Please complete your profile first', 'error');
+      return;
+    }
+
+    // Store current user in AppState
+    AppState.currentUser = targetUser;
+    targetUser.uid = userKey; // Ensure UID is set
+
+    // Fetch ALL user profiles from database
+    const allProfilesSnapshot = await firebase.database().ref('profiles').once('value');
+    const allProfilesData = allProfilesSnapshot.val();
+    
+    let candidates = [];
+    if (allProfilesData) {
+      candidates = Object.entries(allProfilesData).map(([uid, profile]) => ({
+        uid,
+        ...profile
+      }));
+    }
+
+    // Also include any local users
+    candidates = [...candidates, ...AppState.localUsers];
+    
+    // Store all profiles in AppState for later use
+    AppState.allProfiles = candidates;
+
+    if (candidates.length === 0) {
+      document.getElementById('result').innerHTML = '<p class="text-muted">No other users in the matching pool yet. Be the first to create a profile!</p>';
+      return;
+    }
+
+    // Get rejected IDs to exclude from search
+    const rejectedIds = window.FirebaseHelpers 
+      ? await window.FirebaseHelpers.getRejectedMatchIds(userKey)
+      : [];
+
+    // Find matches using exclusion list
+    const matches = window.Matching.findRematch(
+      targetUser,
+      candidates,
+      rejectedIds,
+      10
+    );
+
+    if (!matches.matches || matches.matches.length === 0) {
       document.getElementById('result').innerHTML = '<p class="text-muted">No compatible matches found. Check back later as more users join!</p>';
       return;
     }
 
     // Store matches in state
-    AppState.currentMatches = matches;
+    AppState.currentMatches = matches.matches;
     AppState.currentMatchIndex = 0;
 
     // Display best match with request button
-    const bestMatch = matches[0];
+    const bestMatch = matches.matches[0];
     const qualityBadge = window.Matching.getMatchQualityBadge(bestMatch.score);
     const resultDiv = document.getElementById('result');
     resultDiv.innerHTML = `
@@ -545,6 +611,12 @@ async function handleFindMatch() {
     }
 
     window.UI.showToast('Match found!', 'success');
+  } catch (error) {
+    console.error('Error finding match:', error);
+    document.getElementById('result').innerHTML = '<p class="error">Error finding match. Please try again.</p>';
+    window.UI.showToast('Error finding match', 'error');
+  }
+}
   } catch (error) {
     console.error('Error finding match:', error);
     document.getElementById('result').innerHTML = '<p class="error">Error finding match. Please try again.</p>';
@@ -1331,20 +1403,32 @@ function showSection(sectionId) {
   });
 }
 
-// Scroll to matching section without hiding other sections
-function scrollToMatching() {
-  const matchSection = document.getElementById('match-section');
-  if (matchSection) {
-    matchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+/**
+ * Start new search - reset state and find fresh matches
+ */
+async function startNewSearch() {
+  try {
+    // Reset AppState
+    AppState.currentMatches = [];
+    AppState.currentMatchIndex = 0;
+    
+    const currentUser = firebase.auth().currentUser;
+    if (currentUser && window.FirebaseHelpers) {
+      // Clear rejection history
+      await window.FirebaseHelpers.clearRejectedMatches(currentUser.uid);
+      window.UI.showToast('Search history cleared. Finding new matches...', 'info');
+    }
+    
+    // Call findMatch to search again
+    await findMatch();
+  } catch (error) {
+    console.error('Error starting new search:', error);
+    window.UI.showToast('Error starting new search', 'error');
   }
 }
 
-// Export functions for inline onclick handlers
-window.showNextMatch = showNextMatch;
-window.showSection = showSection;
-window.scrollToMatching = scrollToMatching;
-window.startSession = startSession;
-window.endSession = endSession;
+// Export for inline handlers
+window.startNewSearch = startNewSearch;
 
 /**
  * Toggle notification panel
@@ -1472,7 +1556,10 @@ async function sendMatchRequest(match) {
 async function handleRematchRequest(currentMatch) {
   try {
     const currentUser = firebase.auth().currentUser;
-    if (!currentUser) return;
+    if (!currentUser) {
+      window.UI.showToast('Please log in first', 'error');
+      return;
+    }
 
     const userId = currentUser.uid;
     const rejectedUserId = currentMatch.user.uid || currentMatch.user.username;
@@ -1485,94 +1572,124 @@ async function handleRematchRequest(currentMatch) {
       }
     }
 
-    // Get updated rejected list
+    window.UI.showToast('Finding alternative matches...', 'info');
+
+    // Fetch current user profile
+    const userSnapshot = await firebase.database().ref(`users/${userId}`).once('value');
+    const currentUserProfile = userSnapshot.val();
+    
+    if (!currentUserProfile) {
+      window.UI.showToast('Could not load your profile', 'error');
+      return;
+    }
+
+    // Fetch ALL user profiles (fresh fetch)
+    let allCandidates = [];
+    const profilesSnapshot = await firebase.database().ref('profiles').once('value');
+    const profilesData = profilesSnapshot.val();
+    
+    if (profilesData) {
+      allCandidates = Object.entries(profilesData).map(([uid, profile]) => ({
+        uid,
+        ...profile
+      }));
+    }
+    
+    console.log(`Found ${allCandidates.length} total candidates for rematch`);
+
+    // Get rejected IDs to exclude
     const rejectedIds = window.FirebaseHelpers 
       ? await window.FirebaseHelpers.getRejectedMatchIds(userId)
       : [rejectedUserId];
-
-    window.UI.showToast('Finding alternative matches...', 'info');
-
-    // Fetch current user profile and candidates
-    const currentUserProfile = AppState.currentUser;
-    const candidates = AppState.allProfiles || [];
+    
+    console.log(`Excluding ${rejectedIds.length} rejected matches:`, rejectedIds);
 
     // Use findRematch with exclusion list
     const rematchResult = window.Matching.findRematch(
       currentUserProfile,
-      candidates,
+      allCandidates,
       rejectedIds,
       10
     );
 
-    if (rematchResult.status === 'no_matches') {
+    console.log('Rematch result:', rematchResult);
+
+    if (rematchResult.status === 'no_matches' || !rematchResult.matches || rematchResult.matches.length === 0) {
       // No more matches available
       const resultDiv = document.getElementById('result');
       resultDiv.innerHTML = `
         <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
           <h3 style="color: var(--error); margin: 0 0 12px 0;">⚠️ No More Matches</h3>
           <p style="color: var(--text-secondary); margin: 0 0 16px 0;">
-            ${rematchResult.message}
+            ${rematchResult.message || 'You\'ve reviewed all compatible matches. Check back later!'}
           </p>
-          <button onclick="findMatch()" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+          <button id="start-new-search-fallback-btn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
             🔄 Start New Search
           </button>
         </div>
       `;
-      window.UI.showToast('You\'ve reviewed all compatible matches!', 'info');
+      
+      // Attach event listener to the button
+      document.getElementById('start-new-search-fallback-btn')?.addEventListener('click', startNewSearch);
+      
+      window.UI.showToast('No more matches available', 'info');
       return;
     }
 
-    if (rematchResult.matches && rematchResult.matches.length > 0) {
-      // Display first alternative match
-      const bestRematch = rematchResult.matches[0];
-      AppState.currentMatches = rematchResult.matches;
-      AppState.currentMatchIndex = 0;
+    // Display first alternative match
+    const bestRematch = rematchResult.matches[0];
+    AppState.currentMatches = rematchResult.matches;
+    AppState.currentMatchIndex = 0;
 
-      const qualityBadge = window.Matching.getMatchQualityBadge(bestRematch.score);
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = `
-        <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--success); border-radius: 4px; margin-bottom: 16px;">
-          <p style="color: var(--success); margin: 0; font-weight: 600;">✓ Found alternative match!</p>
+    const qualityBadge = window.Matching.getMatchQualityBadge(bestRematch.score);
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+      <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--success); border-radius: 4px; margin-bottom: 16px;">
+        <p style="color: var(--success); margin: 0; font-weight: 600;">✓ Found alternative match!</p>
+      </div>
+      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
+        <h3 style="margin: 0 0 8px 0; color: white;">Next Match</h3>
+        <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
+          <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestRematch.score} points</p>
+          <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
+            ${qualityBadge.emoji} ${qualityBadge.text}
+          </span>
         </div>
-        <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
-          <h3 style="margin: 0 0 8px 0; color: white;">Next Match</h3>
-          <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-            <p style="font-size: 32px; font-weight: 700; margin: 0; color: white;">${bestRematch.score} points</p>
-            <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
-              ${qualityBadge.emoji} ${qualityBadge.text}
-            </span>
-          </div>
-          <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
-        </div>
-        <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
-          <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
-          <ul style="line-height: 1.8;">
-            ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
-          </ul>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-          <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
-            📩 Send Match Request
-          </button>
-          <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
-            🔄 Try Another Match
-          </button>
-        </div>
-      `;
+        <p style="margin: 0; color: white;"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
+      </div>
+      <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.05); border-radius: var(--radius); margin-bottom: 16px;">
+        <h4 style="color: var(--primary-dark); margin-bottom: 12px;">Why you match:</h4>
+        <ul style="line-height: 1.8;">
+          ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
+        </ul>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+          📩 Send Match Request
+        </button>
+        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
+          🔄 Try Another Match
+        </button>
+      </div>
+    `;
 
-      // Attach event listeners to new buttons
-      document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
-        await sendMatchRequest(bestRematch);
-      });
-      document.getElementById('rematch-btn')?.addEventListener('click', async () => {
-        await handleRematchRequest(bestRematch);
-      });
+    // Attach event listeners to new buttons
+    document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
+      await sendMatchRequest(bestRematch);
+    });
+    document.getElementById('rematch-btn')?.addEventListener('click', async () => {
+      await handleRematchRequest(bestRematch);
+    });
 
-      window.UI.showToast(`Found ${rematchResult.matches.length} alternative match(es)!`, 'success');
-    }
+    window.UI.showToast(`Found next match!`, 'success');
   } catch (error) {
     console.error('Error handling rematch request:', error);
     window.UI.showToast('Failed to find alternative matches', 'error');
+    document.getElementById('result').innerHTML = `
+      <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
+        <p style="color: var(--error);">Error finding alternative match. Please try again.</p>
+      </div>
+    `;
   }
 }
 

@@ -94,58 +94,64 @@ def safe_generate_content(prompt, max_retries=3):
     Safely generate content with retry logic for rate limits
     Includes basic caching to reduce API calls
     """
-    # Check cache first
     cache_key = hash(prompt)
     if cache_key in request_cache:
         logger.info("Returning cached response")
         return request_cache[cache_key]
-    
+
     for attempt in range(max_retries):
         try:
             m = get_model()
             response = m.generate_content(prompt)
-            
-            # Check if response has text
-            if not hasattr(response, 'text') or not response.text:
-                # Try to get text from candidates
-                if hasattr(response, 'candidates') and response.candidates:
-                    text = response.candidates[0].content.parts[0].text
-                    # Create a simple object to return
-                    class ResponseWrapper:
-                        def __init__(self, txt):
-                            self.text = txt
-                    return ResponseWrapper(text)
-                raise Exception("Empty response from Gemini API")
-            
-            # Cache successful response (with size limit)
+
+            # Robust text extraction from Gemini response
+            text = ""
+
+            if hasattr(response, 'text') and response.text:
+                text = response.text.strip()
+
+            elif hasattr(response, 'candidates') and response.candidates:
+                try:
+                    text = response.candidates[0].content.parts[0].text.strip()
+                except Exception:
+                    text = ""
+
+            if not text:
+                raise Exception("Gemini returned empty output")
+
+            # Wrap response to keep interface consistent
+            class ResponseWrapper:
+                def __init__(self, txt):
+                    self.text = txt
+
+            wrapped = ResponseWrapper(text)
+
+            # Cache successful response
             if len(request_cache) < MAX_CACHE_SIZE:
-                request_cache[cache_key] = response
-            elif len(request_cache) >= MAX_CACHE_SIZE:
-                # Clear oldest entries
+                request_cache[cache_key] = wrapped
+            else:
                 request_cache.clear()
-                request_cache[cache_key] = response
+                request_cache[cache_key] = wrapped
                 logger.info("Cache cleared to save memory")
-            
-            return response
+
+            return wrapped
+
         except Exception as e:
             error_str = str(e)
             logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {error_str}")
-            
-            # Check if it's a rate limit error
+
             if '429' in error_str or 'rate limit' in error_str.lower():
                 if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                    wait_time = 2 ** attempt
                     logger.info(f"Rate limited. Waiting {wait_time}s before retry...")
                     time.sleep(wait_time)
                     continue
-            
-            # If not rate limit or last attempt, raise the error
+
             if attempt == max_retries - 1:
                 logger.error(f"Final error: {error_str}\n{traceback.format_exc()}")
                 raise
-    
-    raise Exception("Failed after maximum retries")
 
+    raise Exception("Failed after maximum retries")
 
 def generate_prompt(content_type, topic):
     """Generate appropriate prompt based on content type"""

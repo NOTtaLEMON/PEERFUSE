@@ -939,23 +939,29 @@ function parseQuizContent(content) {
   
   console.log('🔍 Starting quiz parsing...');
   console.log('📄 Content length:', content.length);
+  console.log('📝 First 500 chars:', content.substring(0, 500));
   
-  // Primary strategy: Split by "Question N" pattern (most reliable)
+  // Primary strategy: Split by "Question N" pattern using multiple approaches
   let blocks = [];
   
-  // Match "Question 1", "Question 2", etc. at the start of a line
-  const questionMatches = content.match(/Question\s+\d+\s*\[?[^\n]*/gi);
-  if (questionMatches) {
-    console.log('🔢 Found question headers:', questionMatches.length);
-  }
-  
-  // Split content at each "Question N" marker
-  const parts = content.split(/(?=Question\s+\d+)/i);
-  blocks = parts
+  // Try approach 1: Split at the start of each "Question N [...]" line
+  // This uses a positive lookahead to split right before each Question marker
+  const approach1 = content.split(/(?=\nQuestion\s+\d+)/);
+  const blocks1 = approach1
     .map(b => b.trim())
     .filter(b => b && /^Question\s+\d+/i.test(b));
   
-  console.log('📦 Split into blocks:', blocks.length);
+  console.log('📦 Approach 1 (split by \\nQuestion): found', blocks1.length, 'blocks');
+  
+  // Try approach 2: Use regex to match each complete question block
+  const questionPattern = /Question\s+\d+[\s\S]*?(?=Question\s+\d+|$)/gi;
+  const blocks2 = content.match(questionPattern) || [];
+  console.log('📦 Approach 2 (regex match): found', blocks2.length, 'blocks');
+  
+  // Use whichever approach found more blocks
+  blocks = blocks1.length >= blocks2.length ? blocks1 : blocks2.map(b => b.trim());
+  
+  console.log('✅ Using blocks from best approach:', blocks.length);
   
   if (blocks.length === 0) {
     console.error('❌ No question blocks found in content!');

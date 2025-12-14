@@ -941,6 +941,13 @@ function parseQuizContent(content) {
   console.log('📄 Content length:', content.length);
   console.log('📝 First 500 chars:', content.substring(0, 500));
   
+  // Strip any preamble text before the first question
+  const firstQuestionIndex = content.search(/Question\s+1\b/i);
+  if (firstQuestionIndex > 0) {
+    console.log('✂️ Removing preamble text (first', firstQuestionIndex, 'chars)');
+    content = content.substring(firstQuestionIndex);
+  }
+  
   // Primary strategy: Split by "Question N" pattern using multiple approaches
   let blocks = [];
   

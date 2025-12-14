@@ -287,31 +287,14 @@ def generate_presession_quiz():
         strengths_text = ', '.join(strengths) if strengths else 'None specified'
         weaknesses_text = ', '.join(weaknesses) if weaknesses else 'None specified'
 
-        prompt = f"""You are creating a comprehensive 20-question assessment quiz. You MUST generate ALL 20 questions.
+        prompt = f"""Generate EXACTLY 20 multiple choice questions. DO NOT include any introductory text, explanations, or conclusions. START IMMEDIATELY with "Question 1".
 
 Student Profile:
 - Strengths: {strengths_text}
 - Weaknesses: {weaknesses_text}
 
-CRITICAL REQUIREMENTS:
-1. Generate EXACTLY 20 questions - no more, no less
-2. Questions 1-10 MUST focus on STRENGTHS ({strengths_text}) - make them moderately challenging
-3. Questions 11-20 MUST focus on WEAKNESSES ({weaknesses_text}) - make them slightly easier
-4. Each question MUST have exactly 4 answer options (A, B, C, D)
-5. Use the EXACT format shown below for EVERY question
+Format EVERY question EXACTLY like this:
 
-REQUIRED FORMAT FOR EACH QUESTION:
-
-Question [NUMBER] [STRENGTH/WEAKNESS - DIFFICULTY]
-[Question text]
-A) [First option]
-B) [Second option]
-C) [Third option]
-D) [Fourth option]
-Correct Answer: [A/B/C/D]
-Explanation: [Brief explanation]
-
-EXAMPLE:
 Question 1 [STRENGTH - HARD]
 What statistical test compares means of three or more independent groups?
 A) Paired t-test
@@ -319,9 +302,19 @@ B) Independent samples t-test
 C) One-way ANOVA
 D) Chi-squared test
 Correct Answer: C
-Explanation: One-way ANOVA is used to compare means of three or more independent groups.
+Explanation: One-way ANOVA compares means of three or more groups.
 
-NOW GENERATE ALL 20 QUESTIONS:"""
+Question 2 [STRENGTH - MEDIUM]
+[Next question...]
+
+RULES:
+- Questions 1-10: Focus on STRENGTHS ({strengths_text}) - moderately challenging
+- Questions 11-20: Focus on WEAKNESSES ({weaknesses_text}) - slightly easier
+- Each question has exactly 4 options (A, B, C, D)
+- Start with Question 1, end with Question 20
+- NO preamble text - start IMMEDIATELY with Question 1
+
+Question 1"""
 
         response = safe_generate_content(prompt)
         response_text = response.text if hasattr(response, 'text') else str(response)

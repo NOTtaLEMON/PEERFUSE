@@ -31,7 +31,7 @@
   
   /* Text colors for specific contexts */
   --text-on-light: #2D3826;     /* Dark green text for light backgrounds */
-  --text-on-dark: #F5FBF0;      /* Light green/white for dark backgrounds */
+  --text-on-dark: #2D3826;      /* Dark green for light mode page background */
   --text-on-accent: #1C2814;    /* Very dark green for light accent buttons */
   
   /* Background Colors - Soft matcha cream */

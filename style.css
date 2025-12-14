@@ -23,9 +23,9 @@
   
   /* Neutral Colors - Warm undertones */
   --muted: #6B7A60;             /* Sage gray */
-  --text-dark: #1C2814;         /* Dark forest text for light backgrounds */
-  --text-light: #2D3826;        /* Medium dark green */
-  --text-lighter: #4A5A3E;      /* Medium sage */
+  --text-dark: #000000;         /* Black text for light backgrounds */
+  --text-light: #1A1A1A;        /* Almost black */
+  --text-lighter: #333333;      /* Dark gray */
   --border: #D4DBC8;            /* Soft sage border */
   --border-dark: #B8C4A8;       /* Deeper sage */
   
@@ -69,8 +69,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --text-dark: #FFFFFF;        /* White text for dark backgrounds */
-    --text-light: #F0FBE8;       /* Very light mint */
-    --text-lighter: #D8E8C8;     /* Light mint */
+    --text-light: #FFFFFF;       /* White */
+    --text-lighter: #EEEEEE;     /* Light gray */
     --card-bg: #1A2410;          /* Dark forest card */
     --page-bg: linear-gradient(165deg, #0F1608 0%, #14180C 50%, #1A2410 100%);
     --input-bg: #283820;         /* Lighter for better contrast */
@@ -86,8 +86,8 @@
 /* Manual Dark Mode Toggle */
 [data-theme="dark"] {
   --text-dark: #FFFFFF;          /* White text for dark backgrounds */
-  --text-light: #F0FBE8;         /* Very light mint */
-  --text-lighter: #D8E8C8;       /* Light mint */
+  --text-light: #FFFFFF;         /* White */
+  --text-lighter: #EEEEEE;       /* Light gray */
   --card-bg: #1A2410;            /* Dark forest card */
   --page-bg: linear-gradient(165deg, #0F1608 0%, #14180C 50%, #1A2410 100%);
   --input-bg: #283820;           /* Lighter for better contrast */

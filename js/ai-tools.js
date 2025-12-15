@@ -69,27 +69,16 @@ function showBackendInstructions() {
  * Render math formulas in an element using KaTeX
  * @param {HTMLElement} element - Element to render math in
  */
-function renderMathInElement(element) {
-  if (typeof renderMathInElement === 'undefined' || !window.katex) {
-    // KaTeX not loaded yet, try again after a delay
-    setTimeout(() => {
-      if (window.renderMathInElement) {
-        window.renderMathInElement(element, {
-          delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '$', right: '$', display: false},
-            {left: '\\[', right: '\\]', display: true},
-            {left: '\\(', right: '\\)', display: false}
-          ],
-          throwOnError: false,
-          trust: true
-        });
-      }
-    }, 500);
+function renderMath(element) {
+  // Wait for KaTeX to load if not available
+  if (!window.renderMathInElement || !window.katex) {
+    console.log('KaTeX not loaded yet, waiting...');
+    setTimeout(() => renderMath(element), 200);
     return;
   }
   
   try {
+    console.log('Rendering math with KaTeX...');
     window.renderMathInElement(element, {
       delimiters: [
         {left: '$$', right: '$$', display: true},
@@ -98,8 +87,10 @@ function renderMathInElement(element) {
         {left: '\\(', right: '\\)', display: false}
       ],
       throwOnError: false,
-      trust: true
+      trust: true,
+      strict: false
     });
+    console.log('Math rendering complete');
   } catch (error) {
     console.error('Error rendering math:', error);
   }
@@ -123,11 +114,11 @@ function showModal(title, htmlContent) {
   modalTitle.textContent = title;
   modalBody.innerHTML = htmlContent;
   
-  // Render math formulas
-  renderMathInElement(modalBody);
-  
   modal.style.display = 'flex';
   modal.style.transform = 'translateX(0)';
+  
+  // Render math formulas after a short delay to ensure DOM is ready
+  setTimeout(() => renderMath(modalBody), 100);
 }
 
 /**
@@ -280,22 +271,42 @@ function downloadPDF() {
 function markdownToHTML(markdown) {
   let html = markdown;
   
+  // Protect math expressions by temporarily replacing them
+  const mathPlaceholders = [];
+  let mathIndex = 0;
+  
+  // Protect display math $$...$$
+  html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
+    const placeholder = `__MATH_DISPLAY_${mathIndex}__`;
+    mathPlaceholders.push({placeholder, content: match});
+    mathIndex++;
+    return placeholder;
+  });
+  
+  // Protect inline math $...$
+  html = html.replace(/\$([^\$\n]+?)\$/g, (match) => {
+    const placeholder = `__MATH_INLINE_${mathIndex}__`;
+    mathPlaceholders.push({placeholder, content: match});
+    mathIndex++;
+    return placeholder;
+  });
+  
   // Headers
   html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
   
+  // Code blocks (before bold/italic to avoid conflicts)
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  
+  // Inline code (avoid matching $ by being more specific)
+  html = html.replace(/`([^`]+?)`/g, '<code>$1</code>');
+  
   // Bold
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  
-  // Code blocks
-  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-  
-  // Inline code
-  html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+  // Italic (but avoid * in math that's already protected)
+  html = html.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
   
   // Unordered lists (bullets with *, -, or -->)
   html = html.replace(/^[\*\-]\s+(.+)$/gim, '<li>$1</li>');
@@ -322,6 +333,11 @@ function markdownToHTML(markdown) {
   if (!html.startsWith('<')) {
     html = '<p>' + html + '</p>';
   }
+  
+  // Restore math expressions
+  mathPlaceholders.forEach(({placeholder, content}) => {
+    html = html.replace(placeholder, content);
+  });
   
   return html;
 }
@@ -412,8 +428,8 @@ async function generateContent(type) {
     modalTitle.textContent = `${displayType} - ${topic}`;
     modalBody.innerHTML = htmlContent;
     
-    // Render math formulas
-    renderMathInElement(modalBody);
+    // Render math formulas after DOM update
+    setTimeout(() => renderMath(modalBody), 100);
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
     

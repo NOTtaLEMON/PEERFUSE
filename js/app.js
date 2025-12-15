@@ -1613,6 +1613,9 @@ async function sendMatchRequest(match) {
       return;
     }
 
+    // Clear any existing session data before sending new request
+    await firebase.database().ref(`sessions/${userKey}`).remove();
+
     // Create match request
     await firebase.database().ref(`matchRequests/${partnerKey}`).set({
       from: userKey,

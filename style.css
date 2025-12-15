@@ -1480,6 +1480,20 @@ footer {
     position: static;
     margin-top: 16px;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .user-bar button {
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  
+  .user-bar #user-welcome {
+    font-size: 13px;
+    flex-basis: 100%;
+    margin-bottom: 4px;
   }
   
   .auth-card {
@@ -1512,12 +1526,16 @@ footer {
 }
 
 @media (max-width: 480px) {
+  header.hero {
+    padding: 20px 12px;
+  }
+  
   header.hero h1 {
     font-size: 20px;
   }
   
   header.hero p {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .card h2 {
@@ -1525,17 +1543,44 @@ footer {
   }
   
   button, .btn {
-    padding: 10px 16px;
+    padding: 10px 14px;
     font-size: 13px;
   }
   
   .nav-bar {
     gap: 6px;
+    padding: 0 12px;
   }
   
   .nav-btn {
     padding: 8px 12px;
     font-size: 12px;
+  }
+  
+  .user-bar button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .theme-toggle .theme-icon {
+    font-size: 18px;
+  }
+  
+  .slider-emoji {
+    font-size: 1.2rem;
+  }
+  
+  .slider-emoji small {
+    font-size: 0.65rem;
+  }
+  
+  .slider-value-display span {
+    font-size: 2.5rem;
   }
 }
 
@@ -2232,7 +2277,41 @@ a.skip-to-main:focus {
   }
   
   .slider-emoji {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    padding: 4px;
+  }
+  
+  .slider-emoji small {
+    font-size: 0.7rem;
+    margin-top: 4px;
+  }
+  
+  .slider-emoji.active {
+    transform: scale(1.15);
+  }
+  
+  .slider-emoji:hover {
+    transform: scale(1.05);
+  }
+  
+  .slider-labels {
+    padding: 0 4px;
+    gap: 4px;
+    margin-top: 20px;
+  }
+  
+  .slider-container {
+    padding: 20px 12px;
+  }
+  
+  .rating-slider::-webkit-slider-thumb {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .rating-slider::-moz-range-thumb {
+    width: 36px;
+    height: 36px;
   }
 }
 

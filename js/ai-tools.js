@@ -66,6 +66,46 @@ function showBackendInstructions() {
 }
 
 /**
+ * Render math formulas in an element using KaTeX
+ * @param {HTMLElement} element - Element to render math in
+ */
+function renderMathInElement(element) {
+  if (typeof renderMathInElement === 'undefined' || !window.katex) {
+    // KaTeX not loaded yet, try again after a delay
+    setTimeout(() => {
+      if (window.renderMathInElement) {
+        window.renderMathInElement(element, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          throwOnError: false,
+          trust: true
+        });
+      }
+    }, 500);
+    return;
+  }
+  
+  try {
+    window.renderMathInElement(element, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\[', right: '\\]', display: true},
+        {left: '\\(', right: '\\)', display: false}
+      ],
+      throwOnError: false,
+      trust: true
+    });
+  } catch (error) {
+    console.error('Error rendering math:', error);
+  }
+}
+
+/**
  * Show modal with content
  * @param {string} title - Modal title
  * @param {string} htmlContent - HTML content to display
@@ -82,6 +122,10 @@ function showModal(title, htmlContent) {
   
   modalTitle.textContent = title;
   modalBody.innerHTML = htmlContent;
+  
+  // Render math formulas
+  renderMathInElement(modalBody);
+  
   modal.style.display = 'flex';
   modal.style.transform = 'translateX(0)';
 }
@@ -115,6 +159,7 @@ function downloadPDF() {
   const printWindow = window.open('', '_blank', 'width=800,height=600');
   
   const styles = `
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <style>
       @page {
         size: A4;
@@ -128,6 +173,8 @@ function downloadPDF() {
         margin: 0;
         padding: 20px;
       }
+      .katex { font-size: 1.1em; }
+      .katex-display { margin: 1em 0; }
       h1, h2, h3, h4 {
         color: #456631;
         margin-top: 1.5em;
@@ -364,6 +411,9 @@ async function generateContent(type) {
     const htmlContent = markdownToHTML(data.content);
     modalTitle.textContent = `${displayType} - ${topic}`;
     modalBody.innerHTML = htmlContent;
+    
+    // Render math formulas
+    renderMathInElement(modalBody);
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
     

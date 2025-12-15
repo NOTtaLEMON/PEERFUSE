@@ -1877,6 +1877,29 @@ a.skip-to-main:focus {
   font-weight: 700;
 }
 
+/* KaTeX Math Rendering Styles */
+.modal-body .katex {
+  font-size: 1.1em;
+  color: var(--text-dark);
+}
+
+.modal-body .katex-display {
+  margin: 1.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+.modal-body .katex-display > .katex {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Chemistry formulas */
+.modal-body .katex .mord.text {
+  color: var(--text-dark);
+}
+
 /* Scrollbar styling for modal */
 .modal-body::-webkit-scrollbar {
   width: 8px;

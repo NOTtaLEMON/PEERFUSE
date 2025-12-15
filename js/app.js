@@ -584,15 +584,11 @@ function showNextMatch() {
     document.getElementById('result').innerHTML = `
       <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
         <h3 style="color: var(--error); margin: 0 0 12px 0;">⚠️ No More Matches</h3>
-        <p style="color: var(--text-secondary); margin: 0 0 16px 0;">
+        <p style="color: var(--text-secondary); margin: 0;">
           You've reviewed all compatible matches. Check back later!
         </p>
-        <button id="start-new-search-btn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-          🔄 Start New Search
-        </button>
       </div>
     `;
-    document.getElementById('start-new-search-btn')?.addEventListener('click', startNewSearch);
     window.UI.showToast('You\'ve reviewed all compatible matches', 'info');
     return;
   }
@@ -1710,17 +1706,11 @@ async function handleRematchRequest(currentMatch) {
       resultDiv.innerHTML = `
         <div style="padding: 20px; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius); text-align: center;">
           <h3 style="color: var(--error); margin: 0 0 12px 0;">⚠️ No More Matches</h3>
-          <p style="color: var(--text-secondary); margin: 0 0 16px 0;">
+          <p style="color: var(--text-secondary); margin: 0;">
             ${rematchResult.message || 'You\'ve reviewed all compatible matches. Check back later!'}
           </p>
-          <button id="start-new-search-fallback-btn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-            🔄 Start New Search
-          </button>
         </div>
       `;
-      
-      // Attach event listener to the button
-      document.getElementById('start-new-search-fallback-btn')?.addEventListener('click', startNewSearch);
       
       window.UI.showToast('No more matches available', 'info');
       return;

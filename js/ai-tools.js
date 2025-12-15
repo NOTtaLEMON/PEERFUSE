@@ -88,7 +88,11 @@ function renderMath(element) {
       ],
       throwOnError: false,
       trust: true,
-      strict: false
+      strict: false,
+      // Enable mhchem for chemistry
+      macros: {
+        "\\ce": "\\ce"
+      }
     });
     console.log('Math rendering complete');
   } catch (error) {
@@ -272,21 +276,21 @@ function markdownToHTML(markdown) {
   let html = markdown;
   
   // Protect math expressions by temporarily replacing them
-  const mathPlaceholders = [];
+  const mathPlaceholders = new Map();
   let mathIndex = 0;
   
   // Protect display math $$...$$
   html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match) => {
-    const placeholder = `__MATH_DISPLAY_${mathIndex}__`;
-    mathPlaceholders.push({placeholder, content: match});
+    const placeholder = `___MATH_DISPLAY_${mathIndex}___`;
+    mathPlaceholders.set(placeholder, match);
     mathIndex++;
     return placeholder;
   });
   
   // Protect inline math $...$
   html = html.replace(/\$([^\$\n]+?)\$/g, (match) => {
-    const placeholder = `__MATH_INLINE_${mathIndex}__`;
-    mathPlaceholders.push({placeholder, content: match});
+    const placeholder = `___MATH_INLINE_${mathIndex}___`;
+    mathPlaceholders.set(placeholder, match);
     mathIndex++;
     return placeholder;
   });
@@ -334,9 +338,9 @@ function markdownToHTML(markdown) {
     html = '<p>' + html + '</p>';
   }
   
-  // Restore math expressions
-  mathPlaceholders.forEach(({placeholder, content}) => {
-    html = html.replace(placeholder, content);
+  // Restore math expressions (use replaceAll to handle all occurrences)
+  mathPlaceholders.forEach((content, placeholder) => {
+    html = html.split(placeholder).join(content);
   });
   
   return html;

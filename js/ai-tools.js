@@ -14,7 +14,7 @@ async function checkBackend() {
   try {
     const response = await fetch(`${BACKEND_URL}/health`, { 
       method: 'GET',
-      signal: AbortSignal.timeout(2000)
+      signal: AbortSignal.timeout(60000) // 60 seconds to allow Render free tier to wake up
     });
     backendAvailable = response.ok;
     return response.ok;
@@ -30,23 +30,23 @@ async function checkBackend() {
 function showBackendInstructions() {
   const message = `
     <div style="padding: 40px; text-align: center;">
-      <h2 style="color: #dc3545; margin-bottom: 20px;">⚠️ Backend Server Not Running</h2>
+      <h2 style="color: #dc3545; margin-bottom: 20px;">⚠️ Backend Server Not Responding</h2>
       
-      <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
-        <h3 style="margin-top: 0; color: #856404;">To use AI features:</h3>
-        <ol style="line-height: 1.8; color: #856404;">
-          <li><strong>Double-click</strong> <code style="background: #fff; padding: 2px 8px; border-radius: 4px;">START_PEERFUSE.bat</code> in your project folder</li>
-          <li>Keep the terminal windows open</li>
-          <li>Come back and click the button again</li>
-        </ol>
+      <div style="background: #d1ecf1; border: 2px solid #0c5460; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+        <h3 style="margin-top: 0; color: #0c5460;">📡 Cloud Server Status:</h3>
+        <p style="line-height: 1.8; color: #0c5460;">
+          The backend server is deployed on <strong>Render.com (free tier)</strong>.<br><br>
+          <strong>⏰ First request after inactivity:</strong> The server sleeps after 15 minutes of no use and takes <strong>30-60 seconds to wake up</strong>.<br><br>
+          <strong>✅ What to do:</strong> Wait 60 seconds and try again. Once awake, it'll be instant for the next 15 minutes!
+        </p>
       </div>
       
-      <div style="background: #d1ecf1; border: 2px solid #0c5460; border-radius: 8px; padding: 15px; margin: 20px 0;">
-        <p style="margin: 0; color: #0c5460;"><strong>💡 Tip:</strong> Use START_PEERFUSE.bat to launch everything automatically!</p>
+      <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #856404;"><strong>💡 Pro Tip:</strong> The server works 24/7 even when your laptop is off - just needs a minute to wake up!</p>
       </div>
       
       <button onclick="location.reload()" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px;">
-        Check Again
+        Try Again
       </button>
     </div>
   `;
@@ -401,6 +401,7 @@ async function generateContent(type) {
       <div class="spinner"></div>
       <p style="color: var(--primary); font-weight: 600; margin: 24px 0 8px; font-size: 16px;">Generating ${type}...</p>
       <p style="color: var(--muted); font-size: 14px; max-width: 400px; margin: 0 auto;">This may take up to 2 minutes. Please wait while we create personalized content for you...</p>
+      <p style="color: var(--muted); font-size: 12px; max-width: 400px; margin: 12px auto 0; font-style: italic;">⏰ First request? The server may need 30-60 seconds to wake up from sleep mode.</p>
       <div class="loading-dots">
         <span></span>
         <span></span>

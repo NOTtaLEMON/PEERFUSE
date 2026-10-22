@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import google.generativeai as genai
 import os
+import json
 import logging
 import traceback
 import time
@@ -58,6 +59,82 @@ except Exception as e:
 # Simple in-memory cache to reduce API calls (cleared on restart)
 request_cache = {}
 MAX_CACHE_SIZE = 50  # Limit cache to save memory
+
+# --- Per-user usage cap (rolling 24h window) ---------------------------------
+# OFF by default so the demo runs unrestricted. To enable in production set
+# USAGE_CAP_ENABLED=true, FIREBASE_DATABASE_URL, FIREBASE_SERVICE_ACCOUNT_JSON,
+# install firebase-admin (see requirements.txt), and make the frontend send the
+# Firebase ID token as "Authorization: Bearer <token>" (and allow that header in CORS).
+#
+# Capacity calculation (theoretical, for scalability discussion):
+#   cap per user         = 65 requests / 24h (typical use is ~60: 2 req/min x 30 min)
+#   400 active users/day = 65 x 400 = 26,000 requests/day (~18 requests/min averaged)
+#   worst case, every request retried 3x (see safe_generate_content) = 78,000/day
+#   Gemini quota is per Google Cloud project, so the project quota must cover this.
+USAGE_CAP_ENABLED = os.getenv('USAGE_CAP_ENABLED', 'false').lower() == 'true'
+USAGE_CAP_LIMIT = 65
+USAGE_WINDOW_SECONDS = 24 * 60 * 60
+_firebase_ready = False
+
+
+def _apply_usage_window(timestamps, now):
+    """Drop timestamps older than the window; add `now` if there is room.
+
+    Returns (updated_timestamps, allowed, seconds_until_next_free_use).
+    Timestamps are stored oldest-first, so the oldest entry is at the front.
+    """
+    fresh = [t for t in (timestamps or []) if now - t < USAGE_WINDOW_SECONDS]
+    if len(fresh) >= USAGE_CAP_LIMIT:
+        return fresh, False, int(fresh[0] + USAGE_WINDOW_SECONDS - now) + 1
+    fresh.append(now)
+    return fresh, True, 0
+
+
+def _init_firebase():
+    """Lazy Firebase Admin setup so the demo path needs no extra dependency."""
+    global _firebase_ready
+    if _firebase_ready:
+        return
+    import firebase_admin
+    from firebase_admin import credentials
+    cred = credentials.Certificate(json.loads(os.environ['FIREBASE_SERVICE_ACCOUNT_JSON']))
+    firebase_admin.initialize_app(cred, {'databaseURL': os.environ['FIREBASE_DATABASE_URL']})
+    _firebase_ready = True
+
+
+def enforce_usage_cap():
+    """Return None if the request may proceed, else a (response, status) to send back."""
+    if not USAGE_CAP_ENABLED:
+        return None
+
+    token = request.headers.get('Authorization', '').removeprefix('Bearer ').strip()
+    if not token:
+        return jsonify({'success': False, 'error': 'Login required'}), 401
+    try:
+        from firebase_admin import auth, db
+        _init_firebase()
+        uid = auth.verify_id_token(token)['uid']
+    except Exception as e:
+        logger.warning(f"ID token verification failed: {str(e)}")
+        return jsonify({'success': False, 'error': 'Invalid login'}), 401
+
+    outcome = {}
+
+    def update(current):
+        # Firebase may run this more than once if the data changed meanwhile
+        timestamps, allowed, retry_after = _apply_usage_window(current, time.time())
+        outcome.update(allowed=allowed, retry_after=retry_after)
+        return timestamps
+
+    db.reference(f'usage/{uid}').transaction(update)
+
+    if not outcome['allowed']:
+        return jsonify({
+            'success': False,
+            'error': 'Daily AI limit reached',
+            'retry_after_seconds': outcome['retry_after']
+        }), 429
+    return None
 
 
 @app.route('/', methods=['GET'])
@@ -226,12 +303,16 @@ def generate_content():
     # Handle preflight CORS requests
     if request.method == 'OPTIONS':
         return '', 200
-    
+
     try:
+        blocked = enforce_usage_cap()
+        if blocked:
+            return blocked
+
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
-            
+
         topic = data.get('topic', '').strip()
         
         if not topic:

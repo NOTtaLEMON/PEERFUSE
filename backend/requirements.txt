@@ -4,3 +4,5 @@ flask-cors==4.0.1
 google-generativeai==0.3.2
 python-dotenv==1.0.0
 gunicorn==21.2.0
+# Needed only when USAGE_CAP_ENABLED=true (per-user cap); uncomment then:
+# firebase-admin

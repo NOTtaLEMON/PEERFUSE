@@ -17,14 +17,6 @@ const firebaseConfig = {
   measurementId: "G-YW68EEWEC9"
 };
 
-// Gemini AI Configuration
-// WARNING: In production, never expose API keys client-side!
-// Implement a backend proxy to handle AI requests securely.
-const geminiConfig = {
-  apiKey: "AIzaSyDtzP6oMeHvOyikO5nnwnuuNbL0bJn4U_Y",
-  model: "gemini-1.5-pro-latest"
-};
-
 // App Configuration
 const appConfig = {
   // Matching algorithm weights
@@ -59,7 +51,6 @@ const appConfig = {
 // Export configurations
 window.PEERFUSE_CONFIG = {
   firebase: firebaseConfig,
-  gemini: geminiConfig,
   app: appConfig
 };
 

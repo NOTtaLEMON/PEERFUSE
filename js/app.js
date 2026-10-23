@@ -335,8 +335,11 @@ async function handleSaveProfile() {
     return;
   }
 
-  const strengths = [strength1, strength2].filter(s => s.trim()).map(s => s.trim());
-  const weaknesses = [weakness1, weakness2].filter(w => w.trim()).map(w => w.trim());
+  // Store a clean value for matching and the user's own text for display
+  const strengthSkills = window.FirebaseHelpers.buildSkillLists([strength1, strength2]);
+  const weaknessSkills = window.FirebaseHelpers.buildSkillLists([weakness1, weakness2]);
+  const strengths = strengthSkills.clean;
+  const weaknesses = weaknessSkills.clean;
 
   if (strengths.length === 0 || weaknesses.length === 0) {
     window.UI.showToast('Please enter at least one strength and one weakness', 'error');
@@ -367,6 +370,8 @@ async function handleSaveProfile() {
     uid: AppState.currentUser?.uid,
     strengths,
     weaknesses,
+    strengthsOriginal: strengthSkills.original,
+    weaknessesOriginal: weaknessSkills.original,
     availability,
     preferredMode: mode,
     primaryGoal: goal,
@@ -1317,19 +1322,23 @@ async function loadUserProfile(username) {
       if (createProfileBtn) window.UI.hide('create-profile-btn');
       if (editProfileBtn) window.UI.show('edit-profile-btn');
 
-      // Populate profile form if profile exists
-      if (profile.strengths && profile.strengths.length > 0) {
+      // Populate profile form if profile exists (the user's own text, falling back to
+      // the stored value for profiles saved before originals were kept)
+      const strengthLabels = profile.strengthsOriginal?.length ? profile.strengthsOriginal : profile.strengths;
+      const weaknessLabels = profile.weaknessesOriginal?.length ? profile.weaknessesOriginal : profile.weaknesses;
+
+      if (strengthLabels && strengthLabels.length > 0) {
         const strength1El = document.getElementById('profile-strength1');
         const strength2El = document.getElementById('profile-strength2');
-        if (strength1El) strength1El.value = profile.strengths[0] || '';
-        if (strength2El) strength2El.value = profile.strengths[1] || '';
+        if (strength1El) strength1El.value = strengthLabels[0] || '';
+        if (strength2El) strength2El.value = strengthLabels[1] || '';
       }
 
-      if (profile.weaknesses && profile.weaknesses.length > 0) {
+      if (weaknessLabels && weaknessLabels.length > 0) {
         const weakness1El = document.getElementById('profile-weakness1');
         const weakness2El = document.getElementById('profile-weakness2');
-        if (weakness1El) weakness1El.value = profile.weaknesses[0] || '';
-        if (weakness2El) weakness2El.value = profile.weaknesses[1] || '';
+        if (weakness1El) weakness1El.value = weaknessLabels[0] || '';
+        if (weakness2El) weakness2El.value = weaknessLabels[1] || '';
       }
 
       // Populate other profile fields

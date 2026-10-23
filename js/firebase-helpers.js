@@ -431,8 +431,39 @@ async function clearRejectedMatches(userId) {
   }
 }
 
+/**
+ * Normalize a skill name for storage and matching: trim, collapse spaces, lowercase
+ * @param {string} text - Skill as typed
+ * @returns {string} Clean skill ('' if empty)
+ */
+function normalizeSkill(text) {
+  return (text || '').toString().trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * Build the stored skill lists from what the user typed
+ * @param {Array<string>} rawSkills - Skills as typed
+ * @returns {{clean: string[], original: string[]}} Normalized, de-duplicated skills for
+ *   matching/queries, and the user's own text for display (same order)
+ */
+function buildSkillLists(rawSkills) {
+  const clean = [];
+  const original = [];
+  (rawSkills || []).forEach(raw => {
+    const text = (raw || '').toString().trim().replace(/\s+/g, ' ');
+    const key = normalizeSkill(text);
+    if (key && !clean.includes(key)) {
+      clean.push(key);
+      original.push(text);
+    }
+  });
+  return { clean, original };
+}
+
 // Export functions to global scope
 window.FirebaseHelpers = {
+  normalizeSkill,
+  buildSkillLists,
   saveUser,
   saveProfile,
   loadProfile,

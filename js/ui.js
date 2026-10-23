@@ -136,6 +136,19 @@ function escapeHtml(str) {
 }
 
 /**
+ * Format a profile's skills for display: the user's own text if saved, otherwise the
+ * stored value (profiles saved before originals were kept). Escaped for HTML.
+ * @param {Array<string>} original - Skills as the user typed them
+ * @param {Array<string>|string} stored - Stored (clean) skills
+ * @returns {string} HTML-safe, comma-separated skills
+ */
+function formatSkills(original, stored) {
+  const list = Array.isArray(original) && original.length ? original : stored;
+  if (Array.isArray(list)) return list.map(escapeHtml).join(', ');
+  return list ? escapeHtml(list) : 'N/A';
+}
+
+/**
  * Get form data as object
  * @param {string} formId - Form element ID
  * @returns {Object} Form data object
@@ -221,8 +234,8 @@ function renderMatchResult(match, containerId) {
       <div style="background: white; padding: 16px; border-radius: 8px; margin: 12px 0;">
         <p><strong>Name:</strong> ${escapeHtml(user.name || user.username || 'Unknown')}</p>
         <p><strong>Match Score:</strong> ${score} points</p>
-        <p><strong>Strengths:</strong> ${Array.isArray(user.strengths) ? user.strengths.join(', ') : user.strengths || 'N/A'}</p>
-        <p><strong>Weaknesses:</strong> ${Array.isArray(user.weaknesses) ? user.weaknesses.join(', ') : user.weaknesses || 'N/A'}</p>
+        <p><strong>Strengths:</strong> ${formatSkills(user.strengthsOriginal, user.strengths)}</p>
+        <p><strong>Weaknesses:</strong> ${formatSkills(user.weaknessesOriginal, user.weaknesses)}</p>
         <p><strong>Availability:</strong> ${escapeHtml(user.availability || 'N/A')}</p>
         <p><strong>Preferred Mode:</strong> ${escapeHtml(user.preferredMode || 'N/A')}</p>
       </div>
@@ -270,8 +283,8 @@ function renderMatchList(matches, containerId) {
       <h3>Match #${index + 1} - ${escapeHtml(match.user.name || match.user.username || 'Unknown')} (Score: ${match.score})</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0;">
         <div>
-          <p><strong>Strengths:</strong> ${Array.isArray(match.user.strengths) ? match.user.strengths.join(', ') : match.user.strengths || 'N/A'}</p>
-          <p><strong>Weaknesses:</strong> ${Array.isArray(match.user.weaknesses) ? match.user.weaknesses.join(', ') : match.user.weaknesses || 'N/A'}</p>
+          <p><strong>Strengths:</strong> ${formatSkills(match.user.strengthsOriginal, match.user.strengths)}</p>
+          <p><strong>Weaknesses:</strong> ${formatSkills(match.user.weaknessesOriginal, match.user.weaknesses)}</p>
         </div>
         <div>
           <p><strong>Availability:</strong> ${escapeHtml(match.user.availability || 'N/A')}</p>

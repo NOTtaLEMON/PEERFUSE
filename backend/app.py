@@ -13,6 +13,7 @@ import json
 import logging
 import traceback
 import time
+import random
 from dotenv import load_dotenv
 
 # Configure logging
@@ -127,10 +128,13 @@ def clean_skill_list(value):
         return None, f'Skills must be a list of at most {MAX_SKILLS} items'
     skills = []
     for item in value:
-        if not isinstance(item, str) or len(item.strip()) > MAX_SKILL_LENGTH:
-            return None, f'Each skill must be text of at most {MAX_SKILL_LENGTH} characters'
-        if item.strip():
-            skills.append(item.strip())
+        if not isinstance(item, str):
+            return None, 'Each skill must be text'
+        text = item.strip()
+        if len(text) > MAX_SKILL_LENGTH:
+            return None, f'Each skill must be at most {MAX_SKILL_LENGTH} characters'
+        if text:
+            skills.append(text)
     return skills, None
 
 
@@ -201,12 +205,38 @@ def get_model():
         logger.info("Gemini model initialized")
     return model
 
+MAX_BACKOFF_SECONDS = 8
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_TEXT_MARKERS = ('429', 'rate limit', 'resource exhausted', '503', 'unavailable', 'timed out', 'deadline')
+
+
+class EmptyResponseError(Exception):
+    """Gemini answered with no text; worth another try."""
+
+
+def is_retryable(error):
+    """Retry only problems that may pass: rate limits, server trouble, timeouts.
+
+    Bad requests, bad API keys and missing models fail the same way every time,
+    so retrying them only wastes calls.
+    """
+    if isinstance(error, (EmptyResponseError, TimeoutError, ConnectionError)):
+        return True
+    status = getattr(error, 'code', None)
+    if isinstance(status, int):
+        return status in RETRYABLE_STATUS_CODES
+    text = str(error).lower()
+    return any(marker in text for marker in RETRYABLE_TEXT_MARKERS)
+
+
 def safe_generate_content(prompt, max_retries=3):
     """
-    Safely generate content with retry logic for rate limits
-    Includes basic caching to reduce API calls
+    Generate content with Gemini. Retries only temporary errors, waiting longer each
+    time (capped, with a little randomness); successful answers are cached by a
+    normalized form of the prompt.
     """
-    cache_key = hash(prompt)
+    # Normalize so prompts that differ only in case or spacing share one cache entry
+    cache_key = hash(' '.join(prompt.lower().split()))
     if cache_key in request_cache:
         logger.info("Returning cached response")
         return request_cache[cache_key]
@@ -229,7 +259,7 @@ def safe_generate_content(prompt, max_retries=3):
                     text = ""
 
             if not text:
-                raise Exception("Gemini returned empty output")
+                raise EmptyResponseError("Gemini returned empty output")
 
             # Wrap response to keep interface consistent
             class ResponseWrapper:
@@ -252,18 +282,16 @@ def safe_generate_content(prompt, max_retries=3):
             error_str = str(e)
             logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {error_str}")
 
-            if '429' in error_str or 'rate limit' in error_str.lower():
-                if attempt < max_retries - 1:
-                    wait_time = 2 ** attempt
-                    logger.info(f"Rate limited. Waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                    continue
-
-            if attempt == max_retries - 1:
-                logger.error(f"Final error: {error_str}\n{traceback.format_exc()}")
+            if attempt == max_retries - 1 or not is_retryable(e):
+                logger.error(f"Giving up: {error_str}\n{traceback.format_exc()}")
                 raise
 
+            wait_time = min(2 ** attempt, MAX_BACKOFF_SECONDS) + random.uniform(0, 0.5)
+            logger.info(f"Temporary error. Waiting {wait_time:.1f}s before retry...")
+            time.sleep(wait_time)
+
     raise Exception("Failed after maximum retries")
+
 
 def generate_prompt(content_type, topic):
     """Generate appropriate prompt based on content type"""
@@ -469,7 +497,7 @@ if __name__ == '__main__':
     if sys.platform == 'win32':
         try:
             sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-        except:
+        except Exception:
             pass
     
     logger.info("=" * 50)

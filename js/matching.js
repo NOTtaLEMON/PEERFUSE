@@ -91,12 +91,14 @@ const MATCHING_WEIGHTS = window.PEERFUSE_CONFIG?.app?.matchingWeights || {
 };
 
 /**
- * Calculate match score between two users
+ * Score a pair of users and explain the score. This is the single source of
+ * truth: calculateMatchScore and getScoreBreakdown both read from it, so the
+ * number and the reasons shown to users can't drift apart.
  * @param {Object} userA - First user object
  * @param {Object} userB - Second user object
- * @returns {number} Match score
+ * @returns {Object} {score, reasons, complementaryCount}
  */
-function calculateMatchScore(userA, userB) {
+function evaluatePair(userA, userB) {
   const weights = MATCHING_WEIGHTS;
 
   // Normalize strings for comparison
@@ -112,99 +114,100 @@ function calculateMatchScore(userA, userB) {
   const bStrengths = normArr(userB.strengths);
   const bWeaknesses = normArr(userB.weaknesses);
 
+  // Quiz flags are saved flat on the profile (preQuizStrugglingInStrengths /
+  // preQuizStrugglingInWeaknesses); the nested preQuizResults shape is kept as a fallback
+  const isStruggling = (user, which) => {
+    const flat = user['preQuizStrugglingIn' + which];
+    if (flat !== undefined) return flat === true;
+    return (user.preQuizResults || {})['strugglingIn' + which] === true;
+  };
+
   let score = 0;
   let matchCount = 0; // Track total number of matching factors
+  const reasons = [];
 
   // 1. Availability match (highest priority - must align for scheduling)
   if (norm(userA.availability) && norm(userA.availability) === norm(userB.availability)) {
     score += weights.availability;
     matchCount++;
+    reasons.push(`✓ Same availability: ${userA.availability} (+${weights.availability})`);
   }
 
   // 2. Complementary strengths/weaknesses (core matching logic)
-  // Consider quiz performance to adjust matching
-  const aQuizResults = userA.preQuizResults || {};
-  const bQuizResults = userB.preQuizResults || {};
-  
-  // If user A scored <50% on their strengths, they need someone who's also not expert-level
-  // (complementary learning where both are still developing)
-  const aStrugglingInStrengths = aQuizResults.strugglingInStrengths === true;
-  const bStrugglingInStrengths = bQuizResults.strugglingInStrengths === true;
-  
-  // If user A scored <50% on weaknesses, they already know those topics decently
-  // Match with someone who's also not super strong (peer-level learning)
-  const aStrugglingInWeaknesses = aQuizResults.strugglingInWeaknesses === true;
-  const bStrugglingInWeaknesses = bQuizResults.strugglingInWeaknesses === true;
-  
-  let complementaryMatches = 0;
-  let complementaryScore = 0;
+  // If both people scored <50% on the side that connects them, they're at a
+  // similar level, which is good for peer learning: 20% bonus per match.
   const MAX_COMPLEMENTARY_SCORE = 80; // Maximum 80 points for complementary skills
-  
+  const compMatches = [];
+  let complementaryScore = 0;
+  let similarLevelBonus = false;
+
+  const addComplementary = (label, neederStruggling, teacherStruggling) => {
+    compMatches.push(label);
+    if (complementaryScore >= MAX_COMPLEMENTARY_SCORE) return;
+    let matchScore = weights.compPerMatch; // 40 points per match
+    if (neederStruggling && teacherStruggling) {
+      matchScore *= 1.2;
+      similarLevelBonus = true;
+    }
+    // Cap the total at MAX_COMPLEMENTARY_SCORE
+    complementaryScore += Math.min(matchScore, MAX_COMPLEMENTARY_SCORE - complementaryScore);
+  };
+
   // A's weaknesses that match B's strengths
   aWeaknesses.forEach(weakness => {
-    if (bStrengths.includes(weakness) && complementaryScore < MAX_COMPLEMENTARY_SCORE) {
-      let matchScore = weights.compPerMatch; // 40 points per match
-      
-      // If A is struggling in weaknesses AND B is struggling in their strengths,
-      // they're at similar levels - good for peer learning
-      if (aStrugglingInWeaknesses && bStrugglingInStrengths) {
-        matchScore *= 1.2; // 20% bonus for similar skill levels
-      }
-      
-      // Cap the total at MAX_COMPLEMENTARY_SCORE
-      const scoreToAdd = Math.min(matchScore, MAX_COMPLEMENTARY_SCORE - complementaryScore);
-      complementaryScore += scoreToAdd;
-      score += scoreToAdd;
-      complementaryMatches++;
+    if (bStrengths.includes(weakness)) {
+      addComplementary(`${weakness} (A needs, B teaches)`,
+        isStruggling(userA, 'Weaknesses'), isStruggling(userB, 'Strengths'));
     }
   });
 
   // B's weaknesses that match A's strengths
   bWeaknesses.forEach(weakness => {
-    if (aStrengths.includes(weakness) && complementaryScore < MAX_COMPLEMENTARY_SCORE) {
-      let matchScore = weights.compPerMatch; // 40 points per match
-      
-      // If B is struggling in weaknesses AND A is struggling in their strengths,
-      // they're at similar levels - good for peer learning
-      if (bStrugglingInWeaknesses && aStrugglingInStrengths) {
-        matchScore *= 1.2; // 20% bonus for similar skill levels
-      }
-      
-      // Cap the total at MAX_COMPLEMENTARY_SCORE
-      const scoreToAdd = Math.min(matchScore, MAX_COMPLEMENTARY_SCORE - complementaryScore);
-      complementaryScore += scoreToAdd;
-      score += scoreToAdd;
-      complementaryMatches++;
+    if (aStrengths.includes(weakness)) {
+      addComplementary(`${weakness} (B needs, A teaches)`,
+        isStruggling(userB, 'Weaknesses'), isStruggling(userA, 'Strengths'));
     }
   });
 
+  const complementaryCount = compMatches.length;
+  if (complementaryCount > 0) {
+    score += complementaryScore;
+    reasons.push(`✓ ${complementaryCount} complementary skill(s): ${compMatches.join(', ')} (+${complementaryScore})`);
+    if (similarLevelBonus) {
+      reasons.push('✓ Similar quiz level on these skills (20% bonus included)');
+    }
+  }
   // Note: Pairs with 0 complementary skills are filtered out in findBestMatch
-  // No need to penalize here since they won't be shown to users
 
   // 3. Other preference matches
   if (norm(userA.preferredMode) && norm(userA.preferredMode) === norm(userB.preferredMode)) {
     score += weights.preferredMode;
     matchCount++;
+    reasons.push(`✓ Same mode: ${userA.preferredMode} (+${weights.preferredMode})`);
   }
 
   if (norm(userA.primaryGoal) && norm(userA.primaryGoal) === norm(userB.primaryGoal)) {
     score += weights.primaryGoal;
     matchCount++;
+    reasons.push(`✓ Same goal: ${userA.primaryGoal} (+${weights.primaryGoal})`);
   }
 
   if (norm(userA.preferredFrequency) && norm(userA.preferredFrequency) === norm(userB.preferredFrequency)) {
     score += weights.preferredFrequency;
     matchCount++;
+    reasons.push(`✓ Same frequency: ${userA.preferredFrequency} (+${weights.preferredFrequency})`);
   }
 
   if (norm(userA.partnerPreference) && norm(userA.partnerPreference) === norm(userB.partnerPreference)) {
     score += weights.partnerPreference;
     matchCount++;
+    reasons.push(`✓ Same partner preference: ${userA.partnerPreference} (+${weights.partnerPreference})`);
   }
 
   if (norm(userA.sessionLength) && norm(userA.sessionLength) === norm(userB.sessionLength)) {
     score += weights.sessionLength;
     matchCount++;
+    reasons.push(`✓ Same session length: ${userA.sessionLength} (+${weights.sessionLength})`);
   }
 
   // Timezone compatibility (intricate check with availability overlap)
@@ -214,28 +217,45 @@ function calculateMatchScore(userA, userB) {
     userA.availability,
     userB.availability
   );
+  score += tzCompat.score;
   if (tzCompat.compatible) {
-    score += tzCompat.score;
+    if (tzCompat.score === 10) {
+      reasons.push(`✓ Same timezone (+${tzCompat.score})`);
+    } else if (tzCompat.score > 0) {
+      reasons.push(`✓ Compatible timezones with overlap (+${tzCompat.score})`);
+    }
     if (tzCompat.score > 0) {
       matchCount++;
     }
   } else {
-    // Incompatible timezones (12+ hours apart)
-    score += tzCompat.score; // Apply -500 penalty
+    // Incompatible timezones (12+ hours apart): -500 penalty
+    reasons.push(`✗ Incompatible timezones (12+ hours apart) (${tzCompat.score})`);
   }
 
   if (norm(userA.studyPersonality) && norm(userA.studyPersonality) === norm(userB.studyPersonality)) {
     score += weights.studyPersonality;
     matchCount++;
+    reasons.push(`✓ Same study style: ${userA.studyPersonality} (+${weights.studyPersonality})`);
   }
 
   // PENALTY: If only 1 factor matches out of all (9 total factors), subtract 50
   // This prevents poor matches where users only share one thing in common
   if (matchCount === 1) {
     score -= 50;
+    reasons.push('✗ Only one preference in common (-50)');
   }
 
-  return score;
+  return { score, reasons, complementaryCount };
+}
+
+/**
+ * Calculate match score between two users
+ * @param {Object} userA - First user object
+ * @param {Object} userB - Second user object
+ * @returns {number} Match score
+ */
+function calculateMatchScore(userA, userB) {
+  return evaluatePair(userA, userB).score;
 }
 
 /**
@@ -245,104 +265,11 @@ function calculateMatchScore(userA, userB) {
  * @returns {Object} Score details with reasons
  */
 function getScoreBreakdown(userA, userB) {
-  const weights = MATCHING_WEIGHTS;
-
-  const norm = (s) => (s || '').toString().toLowerCase().trim();
-  const normArr = (arr) => (
-    Array.isArray(arr) 
-      ? arr.map(s => norm(s)).filter(Boolean)
-      : []
-  );
-
-  const aStrengths = normArr(userA.strengths);
-  const aWeaknesses = normArr(userA.weaknesses);
-  const bStrengths = normArr(userB.strengths);
-  const bWeaknesses = normArr(userB.weaknesses);
-
-  let total = 0;
-  const reasons = [];
-
-  // Availability
-  if (norm(userA.availability) && norm(userA.availability) === norm(userB.availability)) {
-    total += weights.availability;
-    reasons.push(`✓ Same availability: ${userA.availability} (+${weights.availability})`);
-  }
-
-  // Complementary skills
-  let compCount = 0;
-  const compMatches = [];
-  
-  aWeaknesses.forEach(weakness => {
-    if (bStrengths.includes(weakness)) {
-      compCount++;
-      compMatches.push(`${weakness} (A needs, B teaches)`);
-    }
-  });
-
-  bWeaknesses.forEach(weakness => {
-    if (aStrengths.includes(weakness)) {
-      compCount++;
-      compMatches.push(`${weakness} (B needs, A teaches)`);
-    }
-  });
-
-  if (compCount > 0) {
-    const MAX_COMPLEMENTARY_SCORE = 80; // Maximum 80 points for complementary skills
-    const compScore = Math.min(compCount * weights.compPerMatch, MAX_COMPLEMENTARY_SCORE);
-    total += compScore;
-    reasons.push(`✓ ${compCount} complementary skill(s): ${compMatches.join(', ')} (+${compScore})`);
-  }
-
-  // Other preferences
-  if (norm(userA.preferredMode) && norm(userA.preferredMode) === norm(userB.preferredMode)) {
-    total += weights.preferredMode;
-    reasons.push(`✓ Same mode: ${userA.preferredMode} (+${weights.preferredMode})`);
-  }
-
-  if (norm(userA.primaryGoal) && norm(userA.primaryGoal) === norm(userB.primaryGoal)) {
-    total += weights.primaryGoal;
-    reasons.push(`✓ Same goal: ${userA.primaryGoal} (+${weights.primaryGoal})`);
-  }
-
-  if (norm(userA.preferredFrequency) && norm(userA.preferredFrequency) === norm(userB.preferredFrequency)) {
-    total += weights.preferredFrequency;
-    reasons.push(`✓ Same frequency: ${userA.preferredFrequency} (+${weights.preferredFrequency})`);
-  }
-
-  if (norm(userA.sessionLength) && norm(userA.sessionLength) === norm(userB.sessionLength)) {
-    total += weights.sessionLength;
-    reasons.push(`✓ Same session length: ${userA.sessionLength} (+${weights.sessionLength})`);
-  }
-
-  // Timezone compatibility
-  const tzCompat = checkTimezoneCompatibility(
-    userA.timeZone,
-    userB.timeZone,
-    userA.availability,
-    userB.availability
-  );
-  if (tzCompat.compatible) {
-    if (tzCompat.score === 10) {
-      total += tzCompat.score;
-      reasons.push(`✓ Same timezone (+${tzCompat.score})`);
-    } else if (tzCompat.score > 0) {
-      total += tzCompat.score;
-      reasons.push(`✓ Compatible timezones with overlap (+${tzCompat.score})`);
-    }
-  } else {
-    total += tzCompat.score;
-    reasons.push(`✗ Incompatible timezones (12+ hours apart) (${tzCompat.score})`);
-  }
-
-  if (norm(userA.studyPersonality) && norm(userA.studyPersonality) === norm(userB.studyPersonality)) {
-    total += weights.studyPersonality;
-    reasons.push(`✓ Same study style: ${userA.studyPersonality} (+${weights.studyPersonality})`);
-  }
-
+  const { score, reasons, complementaryCount } = evaluatePair(userA, userB);
   return {
-    total,
+    total: score,
     reasons,
-    complementaryCount: compCount
+    complementaryCount
   };
 }
 

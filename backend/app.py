@@ -6,6 +6,7 @@ Production-ready with proper error handling and logging
 
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 import google.generativeai as genai
 import os
 import json
@@ -26,14 +27,28 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enable CORS for all routes - allow all origins temporarily for debugging
+# CORS: only the origins in ALLOWED_ORIGINS (comma-separated) may call this API from a
+# browser. The default covers the local dev server; for a hosted frontend, set
+# ALLOWED_ORIGINS to its address (for example https://your-site.example).
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv(
+    'ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000'
+).split(',') if o.strip()]
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
+        "origins": ALLOWED_ORIGINS,
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
+
+# Request limits: reject oversized bodies (413) before they reach Gemini
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
+MAX_TOPIC_LENGTH = 200
+MAX_SKILLS = 10
+MAX_SKILL_LENGTH = 100
+
+# Debug-only routes (such as /list-models) stay off unless explicitly enabled
+ENABLE_DEBUG_ROUTES = os.getenv('ENABLE_DEBUG_ROUTES', 'false').lower() == 'true'
 
 # Configure Gemini AI with validation
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
@@ -44,8 +59,7 @@ if not GEMINI_API_KEY:
         "Get your API key from: https://makersuite.google.com/app/apikey"
     )
 
-# Log first/last 4 chars of key for debugging (safe to log)
-logger.info(f"Using API key: {GEMINI_API_KEY[:8]}...{GEMINI_API_KEY[-4:]}")
+logger.info("Gemini API key loaded")
 
 try:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -100,6 +114,24 @@ def _init_firebase():
     cred = credentials.Certificate(json.loads(os.environ['FIREBASE_SERVICE_ACCOUNT_JSON']))
     firebase_admin.initialize_app(cred, {'databaseURL': os.environ['FIREBASE_DATABASE_URL']})
     _firebase_ready = True
+
+
+def clean_skill_list(value):
+    """Validate a list of skills from a request: at most MAX_SKILLS short strings.
+
+    Returns (skills, error); error is a message for the client, or None when valid.
+    """
+    if value is None:
+        return [], None
+    if not isinstance(value, list) or len(value) > MAX_SKILLS:
+        return None, f'Skills must be a list of at most {MAX_SKILLS} items'
+    skills = []
+    for item in value:
+        if not isinstance(item, str) or len(item.strip()) > MAX_SKILL_LENGTH:
+            return None, f'Each skill must be text of at most {MAX_SKILL_LENGTH} characters'
+        if item.strip():
+            skills.append(item.strip())
+    return skills, None
 
 
 def enforce_usage_cap():
@@ -280,12 +312,14 @@ def health_check():
         }), 200
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        return jsonify({'status': 'error', 'message': 'Health check failed'}), 500
 
 
 @app.route('/list-models', methods=['GET'])
 def list_models():
-    """List all available Gemini models"""
+    """List all available Gemini models (debug only)"""
+    if not ENABLE_DEBUG_ROUTES:
+        return jsonify({'error': 'Not found'}), 404
     try:
         logger.info("Listing available Gemini models")
         models = genai.list_models()
@@ -293,7 +327,7 @@ def list_models():
         return jsonify({"models": model_names}), 200
     except Exception as e:
         logger.error(f"Error listing models: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Failed to list models"}), 500
 
 @app.route('/generate-notes', methods=['POST', 'OPTIONS'])
 @app.route('/generate-flashcards', methods=['POST', 'OPTIONS'])
@@ -309,15 +343,20 @@ def generate_content():
         if blocked:
             return blocked
 
-        data = request.get_json()
-        if not data:
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not data:
             return jsonify({'error': 'No JSON data provided'}), 400
 
-        topic = data.get('topic', '').strip()
-        
+        topic = data.get('topic', '')
+        if not isinstance(topic, str):
+            return jsonify({'error': 'Topic must be text'}), 400
+        topic = topic.strip()
+
         if not topic:
             return jsonify({'error': 'Topic is required'}), 400
-        
+        if len(topic) > MAX_TOPIC_LENGTH:
+            return jsonify({'error': f'Topic must be at most {MAX_TOPIC_LENGTH} characters'}), 400
+
         # Extract content type from endpoint path
         endpoint = request.path.split('/')[-1].replace('generate-', '')
         logger.info(f"Generating {endpoint} for topic: {topic}")
@@ -337,11 +376,14 @@ def generate_content():
             'content': response_text
         }), 200
         
+    except HTTPException as e:
+        # Client errors such as 413 (body too large) keep their own status
+        return jsonify({'success': False, 'error': e.name}), e.code
     except Exception as e:
         logger.error(f"Error generating content: {str(e)}\n{traceback.format_exc()}")
         return jsonify({
             'success': False,
-            'error': f'Failed to generate content: {str(e)}'
+            'error': 'Failed to generate content'
         }), 500
 
 
@@ -351,19 +393,23 @@ def generate_content():
 def generate_presession_quiz():
     """Generate personalized pre-session quiz with robust error handling"""
     if request.method == 'OPTIONS':
-        response = make_response('', 200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
+        return '', 200
 
     try:
-        data = request.get_json()
-        if not data:
+        blocked = enforce_usage_cap()
+        if blocked:
+            return blocked
+
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not data:
             return jsonify({'error': 'No JSON data provided'}), 400
 
-        strengths = data.get('strengths', [])
-        weaknesses = data.get('weaknesses', [])
+        strengths, error = clean_skill_list(data.get('strengths'))
+        if error:
+            return jsonify({'error': error}), 400
+        weaknesses, error = clean_skill_list(data.get('weaknesses'))
+        if error:
+            return jsonify({'error': error}), 400
 
         if not strengths and not weaknesses:
             return jsonify({'error': 'Strengths and weaknesses are required'}), 400
@@ -400,27 +446,21 @@ GENERATE ALL 20 NOW - DO NOT STOP UNTIL YOU REACH QUESTION 20:"""
         response_text = response.text if hasattr(response, 'text') else str(response)
 
         logger.info("Successfully generated pre-session quiz")
-        response = make_response(jsonify({
+        return jsonify({
             'success': True,
             'content': response_text
-        }), 200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
+        }), 200
 
+    except HTTPException as e:
+        return jsonify({'success': False, 'error': e.name}), e.code
     except Exception as e:
         logger.error(
             f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}"
         )
-        response = make_response(jsonify({
+        return jsonify({
             'success': False,
-            'error': f'Failed to generate quiz: {str(e)}'
-        }), 500)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        return response
+            'error': 'Failed to generate quiz'
+        }), 500
 
 if __name__ == '__main__':
     import sys

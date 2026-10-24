@@ -1601,6 +1601,15 @@ function listenForMatchRequests(userKey) {
 }
 
 /**
+ * Name shown to other students: the display name, never the email
+ * @param {Object} user - Firebase auth user
+ * @returns {string} Display name, or a neutral label if none is set
+ */
+function publicName(user) {
+  return (user && user.displayName && user.displayName.trim()) || 'A PeerFuse student';
+}
+
+/**
  * Send a match request to another user
  */
 async function sendMatchRequest(match) {
@@ -1609,7 +1618,7 @@ async function sendMatchRequest(match) {
     if (!currentUser) return;
 
     const userKey = currentUser.uid;
-    const userName = currentUser.displayName || currentUser.email;
+    const userName = publicName(currentUser);
     
     // Get partner's UID
     const partnerKey = match.user.uid;

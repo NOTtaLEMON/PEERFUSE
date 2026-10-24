@@ -54,10 +54,12 @@ async function saveProfile(profile) {
     
     const normalized = {
       ...profile,
-      username: profile.username || profile.uid || profile.email,
-      email: profile.email || profile.username,
+      username: profile.username || profile.uid || key,
       updatedAt: Date.now()
     };
+
+    // The email stays out of profiles/ (every student downloads that node for matching)
+    const { email: _email, ...publicProfile } = normalized;
     
     console.log('🔍 Saving profile with key:', key);
     console.log('🔍 Profile data:', normalized);
@@ -115,7 +117,7 @@ async function saveProfile(profile) {
     
     // Save to both profiles/ and users/ paths for compatibility
     await Promise.all([
-      window.PEERFUSE_DB.ref('profiles/' + key).update(normalized),
+      window.PEERFUSE_DB.ref('profiles/' + key).update(publicProfile),
       window.PEERFUSE_DB.ref('users/' + key).update(mergedData)
     ]);
     

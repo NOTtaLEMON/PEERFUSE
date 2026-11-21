@@ -1,0 +1,522 @@
+/* ============================================================
+   PeerFuse - "Study lounge" theme layer (coffee + matcha)
+   Loaded after style.css. Calm and structured: warm paper,
+   espresso text, muted matcha actions, small crisp corners and
+   quiet offset shadows. No blur, glow or gradient text.
+   Remove the <link> to lounge.css to return to style.css alone.
+   ============================================================ */
+
+/* ---------- Tokens: morning latte (light) ---------- */
+:root {
+  --paper: #F3EEE5;               /* oat milk */
+  --card-bg: #FBF8F3;
+  --input-bg: #FFFDF9;
+  --hover-bg: #EEE7DA;
+  --matcha-tint: #E6ECDB;
+
+  --text-dark: #3A2F28;           /* espresso */
+  --text-light: #5C4F45;
+  --text-lighter: #8A7C70;
+  --muted: #8A7C70;
+  --text-on-light: #3A2F28;
+  --text-on-dark: #3A2F28;
+
+  --line: #E0D6C8;                /* latte foam */
+  --line-strong: #CDBFAC;
+  --border: var(--line-strong);
+  --border-dark: var(--line-strong);
+  --shadow-tone: #E3D8C8;         /* quiet offset shadow */
+
+  --primary: #5E7E4E;             /* matcha */
+  --primary-dark: #4A663D;
+  --primary-light: #7C9A69;
+  --primary-rgb: 94, 126, 78;
+  --on-primary: #FBF8F3;
+  --accent: #A9BE8C;              /* soft matcha */
+  --accent-light: #DCE5CC;
+  --accent-dark: #8FA673;
+  --secondary: #8B5E3C;           /* coffee */
+  --coffee: #8B5E3C;
+
+  --success: #5E7E4E;
+  --error: #A2524A;               /* brick */
+  --warning: #B4893A;             /* honey */
+  --info: #5B7A86;                /* slate tea */
+
+  --page-bg: var(--paper);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+  --shadow-sm: 2px 2px 0 var(--shadow-tone);
+  --shadow: 3px 3px 0 var(--shadow-tone);
+  --shadow-lg: 4px 4px 0 var(--shadow-tone);
+  --shadow-xl: 5px 5px 0 var(--shadow-tone);
+  --glow: none;
+
+  --transition: background-color 0.15s ease, border-color 0.15s ease,
+                color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  --transition-slow: var(--transition);
+  --transition-fast: var(--transition);
+
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+/* ---------- Tokens: evening espresso (dark) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1C1814;
+    --card-bg: #241F1A;
+    --input-bg: #1F1B17;
+    --hover-bg: #2E2721;
+    --matcha-tint: #2A3324;
+    --text-dark: #EDE5DA;
+    --text-light: #D2C6B8;
+    --text-lighter: #A89A8B;
+    --muted: #A89A8B;
+    --text-on-light: #EDE5DA;
+    --text-on-dark: #EDE5DA;
+    --line: #3A322B;
+    --line-strong: #4A4037;
+    --shadow-tone: #120F0C;
+    --primary: #8BAA77;
+    --primary-dark: #7A9966;
+    --primary-light: #A0BC8D;
+    --primary-rgb: 139, 170, 119;
+    --on-primary: #16130F;
+    --accent: #8BAA77;
+    --coffee: #C49A74;
+    --error: #D07A70;
+    --warning: #D2A656;
+    --info: #8DAAB5;
+  }
+}
+[data-theme="dark"] {
+  --paper: #1C1814;
+  --card-bg: #241F1A;
+  --input-bg: #1F1B17;
+  --hover-bg: #2E2721;
+  --matcha-tint: #2A3324;
+  --text-dark: #EDE5DA;
+  --text-light: #D2C6B8;
+  --text-lighter: #A89A8B;
+  --muted: #A89A8B;
+  --text-on-light: #EDE5DA;
+  --text-on-dark: #EDE5DA;
+  --line: #3A322B;
+  --line-strong: #4A4037;
+  --shadow-tone: #120F0C;
+  --primary: #8BAA77;
+  --primary-dark: #7A9966;
+  --primary-light: #A0BC8D;
+  --primary-rgb: 139, 170, 119;
+  --on-primary: #16130F;
+  --accent: #8BAA77;
+  --coffee: #C49A74;
+  --error: #D07A70;
+  --warning: #D2A656;
+  --info: #8DAAB5;
+}
+
+/* ---------- Base ---------- */
+* {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--text-dark);
+  line-height: 1.65;
+}
+body::before { display: none; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-dark);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+}
+.card h2 {
+  font-size: 24px;
+  color: var(--text-dark);
+  /* style.css paints this heading with a clipped gradient; make it solid */
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+}
+.card h3 { color: var(--coffee); }
+.card p { color: var(--text-light); }
+
+label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  letter-spacing: 0.01em;
+}
+code, pre, kbd { font-family: var(--font-mono); }
+
+/* ---------- Header and bars ---------- */
+header.hero {
+  background: var(--card-bg);
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+header.hero h1 {
+  font-size: clamp(28px, 4vw, 36px);
+  color: var(--text-dark);
+}
+header.hero p { color: var(--text-lighter); }
+.user-bar { color: var(--text-lighter); }
+
+.beta-warning {
+  background: var(--matcha-tint);
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+}
+
+/* ---------- Buttons ---------- */
+button,
+.btn,
+.btn-submit {
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid var(--primary-dark);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+button:hover:not(:disabled),
+.btn:hover:not(:disabled),
+.btn-submit:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: none;
+  box-shadow: none;
+}
+button:active:not(:disabled),
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+button:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+button:disabled,
+.btn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* Quiet "paper" buttons */
+.btn-secondary,
+.user-bar button,
+.nav-btn,
+.icon-btn,
+.btn-choice {
+  background: var(--card-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+.btn-secondary:hover:not(:disabled),
+.user-bar button:hover:not(:disabled),
+.nav-btn:hover,
+.icon-btn:hover,
+.btn-choice:hover {
+  background: var(--matcha-tint);
+  color: var(--text-dark);
+  border-color: var(--primary);
+  transform: none;
+  box-shadow: none;
+}
+.nav-btn::before,
+.btn-choice::before,
+.card::before,
+.question-block::before,
+.status::before,
+.ai-loading::before {
+  display: none;
+}
+
+.btn-danger { background: var(--error); border-color: var(--error); color: #FBF8F3; }
+.btn-danger:hover:not(:disabled) { background: var(--error); filter: brightness(0.92); }
+.btn-success { background: var(--success); border-color: var(--primary-dark); }
+
+.button-group input[type="radio"]:checked + .btn-choice {
+  background: var(--matcha-tint);
+  color: var(--text-dark);
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+  transform: none;
+  animation: none;
+}
+
+/* ---------- Form fields ---------- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select,
+.form-group select,
+.form-group textarea {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--input-bg);
+  color: var(--text-dark);
+  box-shadow: none;
+  font-family: var(--font-body);
+}
+input[type="text"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+input[type="number"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--primary-light);
+  background-color: var(--input-bg);
+  box-shadow: none;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--input-bg);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
+  transform: none;
+}
+input:invalid,
+textarea:invalid,
+select:invalid {
+  border-color: var(--line-strong);   /* no red borders on untouched fields */
+}
+
+/* ---------- Cards and panels ---------- */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.card:hover {
+  transform: none;
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+.auth-screen { background: rgba(28, 24, 20, 0.45); }
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+.auth-card h2 { color: var(--text-dark); }
+
+.tool-section {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.tool-section h3 { color: var(--text-dark); }
+
+.subsection,
+.slider-container,
+.slider-value-display {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.match-result {
+  background: var(--matcha-tint);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+}
+
+.ai-box {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.ai-box code {
+  background: var(--hover-bg);
+  color: var(--text-dark);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.ai-box pre {
+  background: #2A231D;
+  color: #EDE5DA;
+  border: 1px solid var(--line-strong);
+}
+
+/* Quiz questions: options read as normal sentences */
+.question-block {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.question-block:hover {
+  background: var(--hover-bg);
+  transform: none;
+  box-shadow: none;
+}
+.question-block label {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-dark);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.question-block input[type="radio"] { accent-color: var(--primary); }
+.quiz-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--coffee);
+  background: var(--hover-bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 8px;
+  margin-bottom: 10px;
+  text-transform: capitalize;
+}
+
+/* Status messages: quiet panel, coloured edge */
+.status {
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  animation: none;
+}
+.status.success { background: var(--card-bg); border-left-color: var(--success); }
+.status.error   { background: var(--card-bg); border-left-color: var(--error); }
+.status.warning { background: var(--card-bg); border-left-color: var(--warning); }
+.status.info    { background: var(--card-bg); border-left-color: var(--info); }
+
+/* Notifications */
+.notification-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.notification-header {
+  background: var(--matcha-tint);
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--line);
+}
+.notification-header h3 { color: var(--text-dark); }
+.notification-item { border-bottom: 1px solid var(--line); }
+.notification-item:hover { background: var(--hover-bg); }
+.notification-item h4 { color: var(--text-dark); }
+
+/* Modals */
+.modal {
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -3px 0 0 var(--shadow-tone);
+}
+#mandatory-feedback-modal .modal-overlay { background: rgba(28, 24, 20, 0.45); }
+#mandatory-feedback-modal .modal-content {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  animation: none;
+}
+.modal-body::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--line-strong); }
+
+/* Rating sliders */
+.rating-slider { box-shadow: none; }
+.rating-slider:hover { box-shadow: none; }
+.rating-slider::-webkit-slider-thumb {
+  background: var(--card-bg);
+  border: 3px solid var(--primary);
+  box-shadow: none;
+}
+.rating-slider::-moz-range-thumb {
+  background: var(--card-bg);
+  border: 3px solid var(--primary);
+  box-shadow: none;
+}
+.slider-emoji.active {
+  background: var(--matcha-tint);
+  filter: none;
+}
+
+/* Loading states: no glow */
+.spinner::before,
+.spinner::after { filter: none; }
+.loading-dots span {
+  background: var(--primary);
+  box-shadow: none;
+}
+.ai-loading {
+  background: var(--card-bg);
+  border: 1px dashed var(--line-strong);
+}
+.progress-bar {
+  background: var(--primary);
+  box-shadow: none;
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--line);
+  color: var(--text-lighter);
+  font-size: 13px;
+}
+
+/* Boxes that JS/HTML create with a hard-coded white background:
+   use the card colour so they stay readable in dark mode */
+div[style*="background: white"] {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--line);
+  color: var(--text-dark);
+}
+button[style*="background: white"] {
+  background: var(--card-bg) !important;
+}
+
+/* KaTeX maths: match the text colour */
+.katex { color: inherit; font-size: 1.05em; }
+
+/* Respect people who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation-duration: 0.01ms !important;
+  }
+}

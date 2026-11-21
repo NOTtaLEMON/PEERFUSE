@@ -799,61 +799,45 @@ async function handleStartPreQuiz() {
 }
 
 /**
- * Clean and format text from Gemini (remove LaTeX, special symbols, etc.)
- * @param {string} text - Raw text from Gemini
- * @returns {string} Cleaned text
+ * Prepare AI text for the quiz: keep maths ($...$, $$...$$, \(...\), \[...\])
+ * untouched so KaTeX can typeset it, strip markdown bold/italic and code
+ * backticks from the rest, and escape HTML so AI output cannot inject markup.
+ * @param {string} text - Raw text from the AI
+ * @returns {string} HTML-safe text with maths left in its delimiters
  */
 function cleanGeminiText(text) {
   if (!text) return '';
-  
-  let cleaned = text;
-  
-  // Remove LaTeX math delimiters and convert to readable text
-  // Inline math: $...$ or \(...\)
-  cleaned = cleaned.replace(/\$([^$]+)\$/g, '$1');
-  cleaned = cleaned.replace(/\\\(([^)]+)\\\)/g, '$1');
-  
-  // Block math: $$...$$ or \[...\]
-  cleaned = cleaned.replace(/\$\$([^$]+)\$\$/g, '$1');
-  cleaned = cleaned.replace(/\\\[([^\]]+)\\\]/g, '$1');
-  
-  // Remove markdown bold/italic that might not render
-  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
-  cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
-  cleaned = cleaned.replace(/__([^_]+)__/g, '$1');
-  cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
-  
-  // Remove code backticks
-  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
-  
-  // Convert common LaTeX symbols to readable text
-  cleaned = cleaned.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)');
-  cleaned = cleaned.replace(/\\sqrt\{([^}]+)\}/g, '√($1)');
-  cleaned = cleaned.replace(/\\times/g, '×');
-  cleaned = cleaned.replace(/\\div/g, '÷');
-  cleaned = cleaned.replace(/\\pm/g, '±');
-  cleaned = cleaned.replace(/\\leq/g, '≤');
-  cleaned = cleaned.replace(/\\geq/g, '≥');
-  cleaned = cleaned.replace(/\\neq/g, '≠');
-  cleaned = cleaned.replace(/\\approx/g, '≈');
-  cleaned = cleaned.replace(/\\infty/g, '∞');
-  cleaned = cleaned.replace(/\\alpha/g, 'α');
-  cleaned = cleaned.replace(/\\beta/g, 'β');
-  cleaned = cleaned.replace(/\\gamma/g, 'γ');
-  cleaned = cleaned.replace(/\\pi/g, 'π');
-  cleaned = cleaned.replace(/\\theta/g, 'θ');
-  cleaned = cleaned.replace(/\\sum/g, '∑');
-  cleaned = cleaned.replace(/\\int/g, '∫');
-  
-  // Remove any remaining backslash commands
-  cleaned = cleaned.replace(/\\[a-zA-Z]+/g, '');
-  cleaned = cleaned.replace(/\\{/g, '');
-  cleaned = cleaned.replace(/\\}/g, '');
-  
-  // Clean up extra spaces
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  
-  return cleaned;
+
+  // Odd entries of the split are maths segments; leave them exactly as written
+  const parts = String(text).split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g);
+  const cleaned = parts.map((part, i) => {
+    if (i % 2 === 1) return part;
+    return part
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
+  }).join('').replace(/\s+/g, ' ').trim();
+
+  const escape = (window.UI && window.UI.escapeHtml) ? window.UI.escapeHtml : (s) => s;
+  return escape(cleaned);
+}
+
+/**
+ * Typeset any maths inside an element with KaTeX (loaded in index.html).
+ * Does nothing if KaTeX has not loaded, so the plain text still shows.
+ * @param {HTMLElement} element - Container whose text may contain maths
+ */
+function renderQuizMath(element) {
+  if (!element || typeof window.renderMathInElement !== 'function') return;
+  window.renderMathInElement(element, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false },
+      { left: '\(', right: '\)', display: false },
+      { left: '\[', right: '\]', display: true }
+    ],
+    throwOnError: false
+  });
 }
 
 /**
@@ -884,7 +868,7 @@ function displayPreQuizQuestions(quizContent) {
     html += `
       <div class="question-block" style="margin-bottom: 24px; padding: 16px; background: rgba(var(--primary-rgb), 0.04); border-radius: var(--radius-sm);">
         <p style="font-weight: 600; margin-bottom: 12px;">${cleanQuestion}</p>
-        ${q.difficulty ? `<p style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">${q.difficulty}</p>` : ''}
+        ${q.difficulty ? `<span class="quiz-tag">${cleanGeminiText(q.difficulty.replace(/[\[\]]/g, '').toLowerCase())}</span>` : ''}
         <div class="options" style="margin-left: 12px;">
           ${cleanOptions.map((opt, i) => `
             <label style="display: block; margin-bottom: 8px; cursor: pointer;">
@@ -899,6 +883,7 @@ function displayPreQuizQuestions(quizContent) {
   
   html += '</div>';
   questionsDiv.innerHTML = html;
+  renderQuizMath(questionsDiv);
   
   // Store questions for grading
   window.preQuizQuestions = questions;

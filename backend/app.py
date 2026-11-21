@@ -489,6 +489,8 @@ STUDENT: Strengths: {strengths_text} | Weaknesses: {weaknesses_text}
 
 MANDATORY: Generate questions 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, and 20.
 
+MATH FORMAT: write every mathematical expression in LaTeX wrapped in $...$, for example $e^{{x^2}}$ or $\\lim_{{x \\to 0}} \\frac{{\\sin x}}{{x}}$. For chemistry use $\\ce{{H2O}}$. Never write LaTeX without the $ signs.
+
 FORMAT for EVERY question:
 Question [N] [STRENGTH/WEAKNESS - DIFFICULTY]
 [Question text]?

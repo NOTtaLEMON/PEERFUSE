@@ -156,6 +156,8 @@ def enforce_usage_cap():
 
     outcome = {}
 
+    # Transaction step: prune old timestamps, add this request if there is room,
+    # and return the new list to store. Records the outcome in `outcome`.
     def update(current):
         # Firebase may run this more than once if the data changed meanwhile
         timestamps, allowed, retry_after = _apply_usage_window(current, time.time())
@@ -208,6 +210,8 @@ def get_model():
 MAX_BACKOFF_SECONDS = 8
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 RETRYABLE_TEXT_MARKERS = ('429', 'rate limit', 'resource exhausted', '503', 'unavailable', 'timed out', 'deadline')
+# Billing and daily-quota errors also arrive as 429 but do not clear by waiting
+NON_RETRYABLE_TEXT_MARKERS = ('credits are depleted', 'billing', 'prepayment', 'per day', 'quota exceeded for quota metric')
 
 
 class EmptyResponseError(Exception):
@@ -222,10 +226,14 @@ def is_retryable(error):
     """
     if isinstance(error, (EmptyResponseError, TimeoutError, ConnectionError)):
         return True
+    text = str(error).lower()
+    # A 429 can also mean the account is out of credits or quota for the day;
+    # waiting a few seconds will not fix that, so give up at once
+    if any(marker in text for marker in NON_RETRYABLE_TEXT_MARKERS):
+        return False
     status = getattr(error, 'code', None)
     if isinstance(status, int):
         return status in RETRYABLE_STATUS_CODES
-    text = str(error).lower()
     return any(marker in text for marker in RETRYABLE_TEXT_MARKERS)
 
 
@@ -263,6 +271,7 @@ def safe_generate_content(prompt, max_retries=3):
 
             # Wrap response to keep interface consistent
             class ResponseWrapper:
+                # Store the extracted answer text as .text, like a Gemini response
                 def __init__(self, txt):
                     self.text = txt
 

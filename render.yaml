@@ -9,8 +9,12 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: GEMINI_API_KEY
-        sync: false  # Set manually in Render dashboard
+      - key: AI_API_KEY
+        sync: false  # Set manually in Render dashboard (e.g. a Groq key)
+      - key: AI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: AI_MODEL
+        value: qwen/qwen3.8-27b
       - key: FLASK_ENV
         value: production
       - key: WEB_CONCURRENCY

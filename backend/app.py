@@ -1,13 +1,14 @@
 """
 PeerFuse Backend API
-Flask server to handle Gemini AI requests securely
+Flask server that calls an AI model (Qwen by default) for study materials, keeping the API key server-side
 Production-ready with proper error handling and logging
 """
 
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
-import google.generativeai as genai
+import re
+import requests
 import os
 import json
 import logging
@@ -42,7 +43,7 @@ CORS(app, resources={
     }
 })
 
-# Request limits: reject oversized bodies (413) before they reach Gemini
+# Request limits: reject oversized bodies (413) before they reach the AI provider
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
 MAX_TOPIC_LENGTH = 200
 MAX_SKILLS = 10
@@ -51,25 +52,20 @@ MAX_SKILL_LENGTH = 100
 # Debug-only routes (such as /list-models) stay off unless explicitly enabled
 ENABLE_DEBUG_ROUTES = os.getenv('ENABLE_DEBUG_ROUTES', 'false').lower() == 'true'
 
-# Configure Gemini AI with validation
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
-if not GEMINI_API_KEY:
-    logger.error("GEMINI_API_KEY not found in environment variables")
+# AI provider settings. Any OpenAI-compatible chat API works (Groq, Alibaba Model
+# Studio, OpenRouter, a local server); the defaults point at Qwen on Groq.
+AI_API_KEY = os.getenv('AI_API_KEY')
+AI_BASE_URL = os.getenv('AI_BASE_URL', 'https://api.groq.com/openai/v1').rstrip('/')
+AI_MODEL = os.getenv('AI_MODEL', 'qwen/qwen3.8-27b')
+AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '4096'))
+AI_TIMEOUT_SECONDS = 120
+if not AI_API_KEY:
+    logger.error("AI_API_KEY not found in environment variables")
     raise ValueError(
-        "GEMINI_API_KEY not found! Please set it in backend/.env file.\n"
-        "Get your API key from: https://makersuite.google.com/app/apikey"
+        "AI_API_KEY not found! Please set it in backend/.env (and on Render).\n"
+        "For Qwen on Groq, create a key at https://console.groq.com/keys"
     )
-
-logger.info("Gemini API key loaded")
-
-try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    # Lazy loading: Model initialized on first request to save memory
-    model = None
-    logger.info("Gemini API configured successfully - model will initialize on first request")
-except Exception as e:
-    logger.error(f"Failed to configure Gemini API: {str(e)}")
-    raise
+logger.info(f"AI provider configured: model {AI_MODEL} at {AI_BASE_URL}")
 
 # Simple in-memory cache to reduce API calls (cleared on restart)
 request_cache = {}
@@ -85,7 +81,7 @@ MAX_CACHE_SIZE = 50  # Limit cache to save memory
 #   cap per user         = 65 requests / 24h (typical use is ~60: 2 req/min x 30 min)
 #   400 active users/day = 65 x 400 = 26,000 requests/day (~18 requests/min averaged)
 #   worst case, every request retried 3x (see safe_generate_content) = 78,000/day
-#   Gemini quota is per Google Cloud project, so the project quota must cover this.
+#   The AI provider's limits apply per account, so the account's quota must cover this.
 USAGE_CAP_ENABLED = os.getenv('USAGE_CAP_ENABLED', 'false').lower() == 'true'
 USAGE_CAP_LIMIT = 65
 USAGE_WINDOW_SECONDS = 24 * 60 * 60
@@ -191,21 +187,63 @@ def root():
     }), 200
 
 
-def get_model():
-    """
-    Lazy load the Gemini model to save memory on startup
-    """
-    global model
-    if model is None:
-        model = genai.GenerativeModel(
-            'models/gemini-2.5-flash',
-            generation_config={
-                'temperature': 0.7,
-                'max_output_tokens': 8192,  # Increased for 20-question quizzes
-            }
+class AIServiceError(Exception):
+    """The AI provider answered with an HTTP error; .code holds the HTTP status."""
+
+    # Keep the HTTP status as .code so is_retryable can decide whether to retry
+    def __init__(self, code, message):
+        super().__init__(f"{code} {message}")
+        self.code = code
+
+
+# Some Qwen hosts put the model's reasoning inside <think>...</think>; it is not
+# part of the answer, so it is removed before the text is returned
+THINK_BLOCK = re.compile(r'<think>.*?</think>', re.DOTALL | re.IGNORECASE)
+
+
+# Send one prompt to the OpenAI-compatible chat API and return the answer text.
+# Raises AIServiceError for HTTP errors, TimeoutError / ConnectionError for network
+# trouble, and EmptyResponseError when the answer contains no text.
+def call_ai(prompt):
+    body = {
+        'model': AI_MODEL,
+        'messages': [{'role': 'user', 'content': prompt}],
+        'temperature': 0.7,
+        'max_tokens': AI_MAX_TOKENS,
+    }
+    if 'groq.com' in AI_BASE_URL:
+        # Qwen on Groq writes out its reasoning by default; switch that off
+        body['reasoning_effort'] = 'none'
+
+    try:
+        resp = requests.post(
+            f'{AI_BASE_URL}/chat/completions',
+            json=body,
+            headers={'Authorization': f'Bearer {AI_API_KEY}'},
+            timeout=AI_TIMEOUT_SECONDS,
         )
-        logger.info("Gemini model initialized")
-    return model
+    except requests.exceptions.Timeout as e:
+        raise TimeoutError(f'AI request timed out: {e}') from e
+    except requests.exceptions.RequestException as e:
+        raise ConnectionError(f'AI request could not connect: {e}') from e
+
+    if resp.status_code != 200:
+        try:
+            detail = resp.json().get('error', {})
+            message = detail.get('message') if isinstance(detail, dict) else str(detail)
+        except ValueError:
+            message = resp.text[:300]
+        raise AIServiceError(resp.status_code, message or resp.reason)
+
+    try:
+        text = resp.json()['choices'][0]['message'].get('content') or ''
+    except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+        text = ''
+    text = THINK_BLOCK.sub('', text).strip()
+    if not text:
+        raise EmptyResponseError('AI returned empty output')
+    return text
+
 
 MAX_BACKOFF_SECONDS = 8
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -215,7 +253,7 @@ NON_RETRYABLE_TEXT_MARKERS = ('credits are depleted', 'billing', 'prepayment', '
 
 
 class EmptyResponseError(Exception):
-    """Gemini answered with no text; worth another try."""
+    """The AI answered with no text; worth another try."""
 
 
 def is_retryable(error):
@@ -239,7 +277,7 @@ def is_retryable(error):
 
 def safe_generate_content(prompt, max_retries=3):
     """
-    Generate content with Gemini. Retries only temporary errors, waiting longer each
+    Generate content with the AI provider. Retries only temporary errors, waiting longer each
     time (capped, with a little randomness); successful answers are cached by a
     normalized form of the prompt.
     """
@@ -251,27 +289,11 @@ def safe_generate_content(prompt, max_retries=3):
 
     for attempt in range(max_retries):
         try:
-            m = get_model()
-            response = m.generate_content(prompt)
-
-            # Robust text extraction from Gemini response
-            text = ""
-
-            if hasattr(response, 'text') and response.text:
-                text = response.text.strip()
-
-            elif hasattr(response, 'candidates') and response.candidates:
-                try:
-                    text = response.candidates[0].content.parts[0].text.strip()
-                except Exception:
-                    text = ""
-
-            if not text:
-                raise EmptyResponseError("Gemini returned empty output")
+            text = call_ai(prompt)
 
             # Wrap response to keep interface consistent
             class ResponseWrapper:
-                # Store the extracted answer text as .text, like a Gemini response
+                # Store the answer text as .text, the shape the routes expect
                 def __init__(self, txt):
                     self.text = txt
 
@@ -345,7 +367,8 @@ def health_check():
         return jsonify({
             'status': 'ok',
             'message': 'PeerFuse Backend is running',
-            'gemini_configured': GEMINI_API_KEY is not None
+            'ai_configured': AI_API_KEY is not None,
+            'model': AI_MODEL
         }), 200
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
@@ -354,13 +377,15 @@ def health_check():
 
 @app.route('/list-models', methods=['GET'])
 def list_models():
-    """List all available Gemini models (debug only)"""
+    """List the models the configured AI provider offers (debug only)"""
     if not ENABLE_DEBUG_ROUTES:
         return jsonify({'error': 'Not found'}), 404
     try:
-        logger.info("Listing available Gemini models")
-        models = genai.list_models()
-        model_names = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
+        resp = requests.get(f'{AI_BASE_URL}/models',
+                            headers={'Authorization': f'Bearer {AI_API_KEY}'},
+                            timeout=30)
+        resp.raise_for_status()
+        model_names = [m.get('id') for m in resp.json().get('data', [])]
         return jsonify({"models": model_names}), 200
     except Exception as e:
         logger.error(f"Error listing models: {str(e)}\n{traceback.format_exc()}")
@@ -400,7 +425,7 @@ def generate_content():
         
         prompt = generate_prompt(endpoint, topic)
         
-        # Generate content using Gemini with retry logic
+        # Generate content using the AI provider with retry logic
         response = safe_generate_content(prompt)
         
         # Safely extract text
@@ -512,8 +537,8 @@ if __name__ == '__main__':
     logger.info("=" * 50)
     logger.info("PeerFuse Backend Server - Production Mode")
     logger.info("=" * 50)
-    logger.info(f"Gemini API: {'Configured' if GEMINI_API_KEY else 'NOT CONFIGURED'}")
-    logger.info("Model: models/gemini-2.5-flash")
+    logger.info(f"AI API: {'Configured' if AI_API_KEY else 'NOT CONFIGURED'}")
+    logger.info(f"Model: {AI_MODEL} ({AI_BASE_URL})")
     logger.info("Server: http://127.0.0.1:5000")
     logger.info("Endpoints: /health, /generate-notes, /generate-flashcards, /generate-quiz, /generate-presession-quiz")
     logger.info("=" * 50)

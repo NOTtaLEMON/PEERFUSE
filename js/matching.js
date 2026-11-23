@@ -141,6 +141,9 @@ function evaluatePair(userA, userB) {
   let complementaryScore = 0;
   let similarLevelBonus = false;
 
+  // Skills are stored lowercase; show them as "Organic Chemistry" in reasons
+  const titleCase = (text) => text.replace(/\b\w/g, (c) => c.toUpperCase());
+
   const addComplementary = (label, neederStruggling, teacherStruggling) => {
     compMatches.push(label);
     if (complementaryScore >= MAX_COMPLEMENTARY_SCORE) return;
@@ -156,7 +159,7 @@ function evaluatePair(userA, userB) {
   // A's weaknesses that match B's strengths
   aWeaknesses.forEach(weakness => {
     if (bStrengths.includes(weakness)) {
-      addComplementary(`${weakness} (A needs, B teaches)`,
+      addComplementary(`They can teach you ${titleCase(weakness)}`,
         isStruggling(userA, 'Weaknesses'), isStruggling(userB, 'Strengths'));
     }
   });
@@ -164,7 +167,7 @@ function evaluatePair(userA, userB) {
   // B's weaknesses that match A's strengths
   bWeaknesses.forEach(weakness => {
     if (aStrengths.includes(weakness)) {
-      addComplementary(`${weakness} (B needs, A teaches)`,
+      addComplementary(`You can teach them ${titleCase(weakness)}`,
         isStruggling(userB, 'Weaknesses'), isStruggling(userA, 'Strengths'));
     }
   });
@@ -172,7 +175,7 @@ function evaluatePair(userA, userB) {
   const complementaryCount = compMatches.length;
   if (complementaryCount > 0) {
     score += complementaryScore;
-    reasons.push(`✓ ${complementaryCount} complementary skill(s): ${compMatches.join(', ')} (+${complementaryScore})`);
+    reasons.push(`✓ ${compMatches.join('; ')} (+${complementaryScore})`);
     if (similarLevelBonus) {
       reasons.push('✓ Similar quiz level on these skills (20% bonus included)');
     }

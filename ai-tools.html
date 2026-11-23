@@ -23,25 +23,37 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
-  
+
+  <!-- Markdown rendering for AI answers (tables, quotes, lists), cleaned by DOMPurify -->
+  <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" integrity="sha384-+VfUPEb0PdtChMwmBcBmykRMDd+v6D/oFmB3rZM/puCMDYcIvF968OimRh4KQY9a" crossorigin="anonymous"></script>
+
 </head>
 <body>
   <!-- Header -->
   <header class="hero">
-    <div class="user-bar" style="justify-content: flex-end;">
+    <h1>🤖 PeerFuse AI Tools</h1>
+    <p>Generate study notes, flashcards and quizzes with Qwen AI</p>
+    <div class="user-bar" id="user-bar">
+      <span id="user-welcome">Not signed in</span>
       <button id="theme-toggle-ai" class="theme-toggle" aria-label="Toggle theme">
         <span class="theme-icon">🌙</span>
       </button>
+      <button id="logout-btn" class="hidden">Logout</button>
+      <a id="signin-link" class="nav-btn hidden" href="index.html">Sign in</a>
     </div>
-    <h1>🤖 PeerFuse AI Tools</h1>
-    <p>Generate personalized study materials powered by Qwen AI</p>
+
+    <!-- Same navigation as the main page -->
+    <nav class="nav-bar" id="nav-bar">
+      <a class="nav-btn" href="index.html#profile">📋 Profile</a>
+      <a class="nav-btn" href="index.html#match">🔍 Find Study Buddy</a>
+      <a class="nav-btn nav-btn-current" href="ai-tools.html" aria-current="page">🤖 AI Tools</a>
+    </nav>
   </header>
 
   <!-- Main Content -->
   <main>
     <div class="container">
-      <button class="back-btn" onclick="goBackToMain()">← Back to Main</button>
-
       <!-- AI Study Materials Section -->
       <section class="card">
         <h2>✏️ Generate Study Materials</h2>
@@ -119,16 +131,44 @@
   <script src="js/ai-tools.js"></script>
   
   <script>
-    // Return to the main PeerFuse page (used by the "Back to Main" button)
-    function goBackToMain() {
-      window.location.href = 'index.html';
+    // Show who is signed in (display name only, never the email) and switch the
+    // top bar between Logout and Sign in. Called whenever the login state changes.
+    function updateAiTopBar(user) {
+      const welcome = document.getElementById('user-welcome');
+      const logoutBtn = document.getElementById('logout-btn');
+      const signinLink = document.getElementById('signin-link');
+      if (user) {
+        welcome.textContent = user.displayName ? `Welcome, ${user.displayName}` : 'Signed in';
+        logoutBtn.classList.remove('hidden');
+        signinLink.classList.add('hidden');
+      } else {
+        welcome.textContent = 'Not signed in';
+        logoutBtn.classList.add('hidden');
+        signinLink.classList.remove('hidden');
+      }
     }
-    
-    // Initialize theme toggle for AI tools page
+
+    // Sign out, then return to the main page (which shows the login screen)
+    async function handleAiLogout() {
+      try {
+        if (window.PEERFUSE_AUTH) await window.PEERFUSE_AUTH.signOut();
+      } finally {
+        localStorage.removeItem('currentUser');   // same key the main page clears on logout
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Initialize theme toggle and the top bar for the AI tools page
     document.addEventListener('DOMContentLoaded', () => {
       const toggle = document.getElementById('theme-toggle-ai');
       if (toggle && window.ThemeManager) {
         window.ThemeManager.initThemeToggle('theme-toggle-ai');
+      }
+      document.getElementById('logout-btn')?.addEventListener('click', handleAiLogout);
+      if (window.PEERFUSE_AUTH) {
+        window.PEERFUSE_AUTH.onAuthStateChanged(updateAiTopBar);
+      } else {
+        updateAiTopBar(null);
       }
     });
   </script>

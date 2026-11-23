@@ -58,7 +58,14 @@ AI_API_KEY = os.getenv('AI_API_KEY')
 AI_BASE_URL = os.getenv('AI_BASE_URL', 'https://api.groq.com/openai/v1').rstrip('/')
 AI_MODEL = os.getenv('AI_MODEL', 'qwen/qwen3.8-27b')
 AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '4096'))
-AI_TIMEOUT_SECONDS = 120
+AI_TIMEOUT_SECONDS = 45
+# Tokens to allow per answer. Groq counts the requested amount against its
+# per-minute limit, so asking for far more than needed causes rate limits.
+# Groq's free tier also allows only about 1,000 output tokens per minute in total.
+TOKEN_BUDGETS = {'notes': 1500, 'flashcards': 700, 'quiz': 900}
+PRESESSION_QUIZ_TOKENS = 3500
+# Wait suggested when the provider reports a per-minute budget but gives no time
+PER_MINUTE_LIMIT_WAIT_SECONDS = 15
 if not AI_API_KEY:
     logger.error("AI_API_KEY not found in environment variables")
     raise ValueError(
@@ -190,10 +197,12 @@ def root():
 class AIServiceError(Exception):
     """The AI provider answered with an HTTP error; .code holds the HTTP status."""
 
-    # Keep the HTTP status as .code so is_retryable can decide whether to retry
-    def __init__(self, code, message):
+    # Keep the HTTP status as .code so is_retryable can decide whether to retry,
+    # and the provider's "try again in N seconds" hint as .retry_after (or None)
+    def __init__(self, code, message, retry_after=None):
         super().__init__(f"{code} {message}")
         self.code = code
+        self.retry_after = retry_after
 
 
 # Some Qwen hosts put the model's reasoning inside <think>...</think>; it is not
@@ -202,14 +211,15 @@ THINK_BLOCK = re.compile(r'<think>.*?</think>', re.DOTALL | re.IGNORECASE)
 
 
 # Send one prompt to the OpenAI-compatible chat API and return the answer text.
+# max_tokens caps the answer length (defaults to AI_MAX_TOKENS).
 # Raises AIServiceError for HTTP errors, TimeoutError / ConnectionError for network
 # trouble, and EmptyResponseError when the answer contains no text.
-def call_ai(prompt):
+def call_ai(prompt, max_tokens=None):
     body = {
         'model': AI_MODEL,
         'messages': [{'role': 'user', 'content': prompt}],
         'temperature': 0.7,
-        'max_tokens': AI_MAX_TOKENS,
+        'max_tokens': max_tokens or AI_MAX_TOKENS,
     }
     if 'groq.com' in AI_BASE_URL:
         # Qwen on Groq writes out its reasoning by default; switch that off
@@ -233,7 +243,17 @@ def call_ai(prompt):
             message = detail.get('message') if isinstance(detail, dict) else str(detail)
         except ValueError:
             message = resp.text[:300]
-        raise AIServiceError(resp.status_code, message or resp.reason)
+        retry_after = None
+        try:
+            retry_after = float(resp.headers.get('retry-after', ''))
+        except (TypeError, ValueError):
+            hint = re.search(r'try again in ([0-9.]+)s', message or '')
+            retry_after = float(hint.group(1)) if hint else None
+        if retry_after is None and 'per minute' in (message or '').lower():
+            # e.g. Groq's "Request too large ... output tokens per minute": the
+            # budget refills over the next minute, so wait a little and retry
+            retry_after = PER_MINUTE_LIMIT_WAIT_SECONDS
+        raise AIServiceError(resp.status_code, message or resp.reason, retry_after)
 
     try:
         text = resp.json()['choices'][0]['message'].get('content') or ''
@@ -249,7 +269,9 @@ MAX_BACKOFF_SECONDS = 8
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 RETRYABLE_TEXT_MARKERS = ('429', 'rate limit', 'resource exhausted', '503', 'unavailable', 'timed out', 'deadline')
 # Billing and daily-quota errors also arrive as 429 but do not clear by waiting
-NON_RETRYABLE_TEXT_MARKERS = ('credits are depleted', 'billing', 'prepayment', 'per day', 'quota exceeded for quota metric')
+NON_RETRYABLE_TEXT_MARKERS = ('credits are depleted', 'prepayment', 'billing is not enabled',
+                              'billing account', 'per day', 'quota exceeded for quota metric')
+MAX_HINTED_WAIT_SECONDS = 20
 
 
 class EmptyResponseError(Exception):
@@ -275,7 +297,7 @@ def is_retryable(error):
     return any(marker in text for marker in RETRYABLE_TEXT_MARKERS)
 
 
-def safe_generate_content(prompt, max_retries=3):
+def safe_generate_content(prompt, max_retries=3, max_tokens=None):
     """
     Generate content with the AI provider. Retries only temporary errors, waiting longer each
     time (capped, with a little randomness); successful answers are cached by a
@@ -289,7 +311,7 @@ def safe_generate_content(prompt, max_retries=3):
 
     for attempt in range(max_retries):
         try:
-            text = call_ai(prompt)
+            text = call_ai(prompt, max_tokens)
 
             # Wrap response to keep interface consistent
             class ResponseWrapper:
@@ -318,6 +340,10 @@ def safe_generate_content(prompt, max_retries=3):
                 raise
 
             wait_time = min(2 ** attempt, MAX_BACKOFF_SECONDS) + random.uniform(0, 0.5)
+            # Respect the provider's own "try again in N seconds" hint (capped)
+            hinted = getattr(e, 'retry_after', None)
+            if hinted:
+                wait_time = max(wait_time, min(hinted, MAX_HINTED_WAIT_SECONDS))
             logger.info(f"Temporary error. Waiting {wait_time:.1f}s before retry...")
             time.sleep(wait_time)
 
@@ -358,6 +384,25 @@ Answer: [answer]
 
 Make questions challenging but fair."""
     return f"Explain {topic}."
+
+
+# Turn an AI failure into a short, safe message for the page plus an HTTP status.
+# The provider's raw error text is only logged, never sent to the browser.
+def ai_error_response(error, what):
+    text = str(error).lower()
+    if isinstance(error, AIServiceError) and error.code == 429:
+        if 'per day' in text:
+            return jsonify({'success': False, 'reason': 'daily_limit',
+                            'error': 'The AI has reached its daily limit. Please try again tomorrow.'}), 503
+        return jsonify({'success': False, 'reason': 'rate_limited',
+                        'error': 'The AI is busy right now. Please wait a minute and try again.'}), 503
+    if isinstance(error, TimeoutError):
+        return jsonify({'success': False, 'reason': 'timeout',
+                        'error': 'The AI took too long to answer. Please try again.'}), 504
+    status = getattr(error, 'code', None)
+    return jsonify({'success': False, 'reason': 'provider_error',
+                    'provider_status': status if isinstance(status, int) else None,
+                    'error': f'Could not generate {what}. Please try again.'}), 500
 
 
 @app.route('/health', methods=['GET'])
@@ -426,7 +471,7 @@ def generate_content():
         prompt = generate_prompt(endpoint, topic)
         
         # Generate content using the AI provider with retry logic
-        response = safe_generate_content(prompt)
+        response = safe_generate_content(prompt, max_tokens=TOKEN_BUDGETS.get(endpoint, AI_MAX_TOKENS))
         
         # Safely extract text
         response_text = response.text if hasattr(response, 'text') else str(response)
@@ -443,10 +488,7 @@ def generate_content():
         return jsonify({'success': False, 'error': e.name}), e.code
     except Exception as e:
         logger.error(f"Error generating content: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({
-            'success': False,
-            'error': 'Failed to generate content'
-        }), 500
+        return ai_error_response(e, 'content')
 
 
 
@@ -485,11 +527,21 @@ def generate_presession_quiz():
 
         prompt = f"""You MUST create EXACTLY 20 questions. Not 5, not 10, but TWENTY (20) questions total.
 
-STUDENT: Strengths: {strengths_text} | Weaknesses: {weaknesses_text}
+STUDENT
+- Strength subjects: {strengths_text}
+- Weakness subjects: {weaknesses_text}
 
-MANDATORY: Generate questions 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, and 20.
+SUBJECT RULES (strict):
+- Questions 1-10 must each be about one of the strength subjects only ({strengths_text}). Spread them evenly across those subjects.
+- Questions 11-20 must each be about one of the weakness subjects only ({weaknesses_text}). Spread them evenly across those subjects.
+- Never ask about any subject that is not listed above.
 
-MATH FORMAT: write every mathematical expression in LaTeX wrapped in $...$, for example $e^{{x^2}}$ or $\\lim_{{x \\to 0}} \\frac{{\\sin x}}{{x}}$. For chemistry use $\\ce{{H2O}}$. Never write LaTeX without the $ signs.
+LEVEL: every question is at college (undergraduate, first or second year) level.
+- Strength questions: MEDIUM or HARD college level. Test real understanding; no trick puzzles or interview riddles.
+- Weakness questions: EASY or MEDIUM college level. Core concepts a college student is expected to know; no school-level arithmetic or trivia.
+- Every question must require applying a concept (a short calculation or a reasoning step). Never ask for pure recall of a constant, a unit, a definition or a name.
+
+MATH FORMAT: write every mathematical expression in LaTeX wrapped in $...$, for example $e^{{x^2}}$ or $\\frac{{a}}{{b}}$. Write chemical formulas with $\\ce{{...}}$. Never write LaTeX without the $ signs.
 
 FORMAT for EVERY question:
 Question [N] [STRENGTH/WEAKNESS - DIFFICULTY]
@@ -499,14 +551,11 @@ B) [Option]
 C) [Option]
 D) [Option]
 Correct Answer: [A/B/C/D]
-Explanation: [Brief explanation]
-
-Questions 1-10: STRENGTHS ({strengths_text}) - challenging
-Questions 11-20: WEAKNESSES ({weaknesses_text}) - easier
+Explanation: [one short sentence]
 
 GENERATE ALL 20 NOW - DO NOT STOP UNTIL YOU REACH QUESTION 20:"""
 
-        response = safe_generate_content(prompt)
+        response = safe_generate_content(prompt, max_tokens=PRESESSION_QUIZ_TOKENS)
         response_text = response.text if hasattr(response, 'text') else str(response)
 
         logger.info("Successfully generated pre-session quiz")
@@ -521,10 +570,7 @@ GENERATE ALL 20 NOW - DO NOT STOP UNTIL YOU REACH QUESTION 20:"""
         logger.error(
             f"Error generating pre-session quiz: {str(e)}\n{traceback.format_exc()}"
         )
-        return jsonify({
-            'success': False,
-            'error': 'Failed to generate quiz'
-        }), 500
+        return ai_error_response(e, 'the quiz')
 
 if __name__ == '__main__':
     import sys

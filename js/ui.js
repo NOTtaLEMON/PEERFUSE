@@ -105,10 +105,10 @@ function showToast(message, type = 'info', duration = 3000) {
 
   // Set background color based on type
   const colors = {
-    success: '#10b981',
-    error: '#ef4444',
-    warning: '#f59e0b',
-    info: '#2B6CB0'
+    success: '#5E7E4E',
+    error: '#A2524A',
+    warning: '#B4893A',
+    info: '#5B7A86'
   };
   toastMsg.style.backgroundColor = colors[type] || colors.info;
   toastMsg.textContent = message;
@@ -133,6 +133,18 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/**
+ * Name to show for another student. Older profiles sometimes stored the email
+ * as the username, so anything that looks like an email is never displayed.
+ * @param {Object} user - Profile or match user ({name, username})
+ * @returns {string} Display name, or a neutral label
+ */
+function displayNameFor(user) {
+  const name = String((user && (user.name || user.username)) || '').trim();
+  if (!name || name.includes('@')) return 'A PeerFuse student';
+  return name;
 }
 
 /**
@@ -232,7 +244,7 @@ function renderMatchResult(match, containerId) {
     <div class="match-result">
       <h3>🎯 Best Match Found!</h3>
       <div style="background: white; padding: 16px; border-radius: 8px; margin: 12px 0;">
-        <p><strong>Name:</strong> ${escapeHtml(user.name || user.username || 'Unknown')}</p>
+        <p><strong>Name:</strong> ${escapeHtml(displayNameFor(user))}</p>
         <p><strong>Match Score:</strong> ${score} points</p>
         <p><strong>Strengths:</strong> ${formatSkills(user.strengthsOriginal, user.strengths)}</p>
         <p><strong>Weaknesses:</strong> ${formatSkills(user.weaknessesOriginal, user.weaknesses)}</p>
@@ -246,7 +258,7 @@ function renderMatchResult(match, containerId) {
         </ul>
       </div>
       <div style="margin-top: 16px; display: flex; gap: 10px;">
-        <button onclick="startSession('${escapeHtml(user.name || user.username)}')">Start Session</button>
+        <button onclick="startSession('${escapeHtml(displayNameFor(user))}')">Start Session</button>
         <button onclick="showNextMatch()" class="btn-secondary">Next Best Buddy</button>
         <button onclick="quitCurrentMatch()" class="btn-danger">Quit Match</button>
       </div>
@@ -280,7 +292,7 @@ function renderMatchList(matches, containerId) {
 
   const html = matches.map((match, index) => `
     <div class="card" style="margin: 16px 0;">
-      <h3>Match #${index + 1} - ${escapeHtml(match.user.name || match.user.username || 'Unknown')} (Score: ${match.score})</h3>
+      <h3>Match #${index + 1} - ${escapeHtml(displayNameFor(match.user))} (Score: ${match.score})</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0;">
         <div>
           <p><strong>Strengths:</strong> ${formatSkills(match.user.strengthsOriginal, match.user.strengths)}</p>
@@ -297,7 +309,7 @@ function renderMatchList(matches, containerId) {
           ${match.breakdown.reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join('')}
         </ul>
       </details>
-      <button onclick="startSession('${escapeHtml(match.user.name || match.user.username)}')" style="margin-top: 12px;">Connect with ${escapeHtml(match.user.name || match.user.username)}</button>
+      <button onclick="startSession('${escapeHtml(displayNameFor(match.user))}')" style="margin-top: 12px;">Connect with ${escapeHtml(displayNameFor(match.user))}</button>
     </div>
   `).join('');
 
@@ -387,6 +399,7 @@ if (document.readyState === 'loading') {
 
 // Export functions to global scope
 window.UI = {
+  displayNameFor,
   show,
   hide,
   toggle,

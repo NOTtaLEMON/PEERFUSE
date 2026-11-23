@@ -8,8 +8,12 @@ const AppState = {
   currentUser: null,
   currentMatches: [],
   currentMatchIndex: 0,
-  localUsers: []
+  localUsers: [],
+  hasProfile: false        // true once the user has saved a profile
 };
+
+// localStorage flag: a study session ended and the buddy has not been rated yet
+const FEEDBACK_DUE_KEY = 'peerfuse_feedback_due';
 
 /**
  * Initialize the application
@@ -49,11 +53,11 @@ function handleAuthStateChange(user) {
   if (user) {
     console.log('✅ User authenticated:', user.uid);
     AppState.currentUser = user;
-    
+
     const displayName = user.displayName || user.email;
     window.Auth.LocalStorage.setCurrentUser(displayName);
     window.UI.updateUserWelcome(displayName);
-    
+
     showMainInterface(displayName);
   } else {
     console.log('ℹ️ User not authenticated');
@@ -84,10 +88,10 @@ function showAuthScreen() {
 function showMainInterface(username) {
   window.UI.hide('auth-screen');
   window.UI.updateUserWelcome(username);
-  
+
   // Show navigation bar
   window.UI.show('nav-bar');
-  
+
   // Show main sections
   window.UI.show('match-section');
   window.UI.show('prequiz-section');
@@ -97,12 +101,12 @@ function showMainInterface(username) {
 
   // Load user profile
   loadUserProfile(username);
-  
+
   // Setup AI event listeners (after sections are visible)
   if (window.setupAIEventListeners) {
     setTimeout(() => window.setupAIEventListeners(), 100);
   }
-  
+
   // Listen for incoming match requests
   const currentUser = firebase.auth().currentUser;
   if (currentUser) {
@@ -157,6 +161,12 @@ function setupEventListeners() {
   if (submitPrequizBtn) {
     submitPrequizBtn.addEventListener('click', handleSubmitPreQuiz);
   }
+
+  // Retake resets the assessment in place (no page reload, so matches stay on screen)
+  document.getElementById('retake-prequiz-btn')?.addEventListener('click', resetPreQuiz);
+
+  // Finishing a session unlocks the buddy feedback form
+  document.getElementById('end-session-btn')?.addEventListener('click', handleEndSession);
 
   const postquizForm = document.getElementById('postquiz-form');
   if (postquizForm) {
@@ -213,10 +223,10 @@ async function handleLogin() {
   try {
     const userCredential = await window.Auth.signIn(email, password);
     const displayName = userCredential.user.displayName || email;
-    
+
     window.Auth.LocalStorage.setCurrentUser(displayName);
     window.UI.showToast('Login successful!', 'success');
-    
+
     showMainInterface(displayName);
   } catch (error) {
     console.error('Login error:', {
@@ -241,6 +251,8 @@ async function handleSignup() {
   // Show username field if not already shown
   if (usernameRow && usernameRow.classList.contains('hidden')) {
     window.UI.show('auth-username-row');
+    const passwordField = document.getElementById('auth-password');
+    if (passwordField) passwordField.placeholder = 'Choose a password (at least 6 characters)';
     usernameField?.focus();
     window.UI.showToast('Please enter a display name to complete signup', 'info');
     return;
@@ -273,10 +285,10 @@ async function handleSignup() {
     await window.Auth.signUp(email, password);
     await window.Auth.updateDisplayName(username);
     window.Auth.LocalStorage.setCurrentUser(username);
-    
+
     window.UI.showToast('Welcome to PeerFuse!', 'success');
     showMainInterface(username);
-    
+
     // Show profile section for first-time setup
     window.UI.show('profile-section');
   } catch (error) {
@@ -293,10 +305,10 @@ async function handleLogout() {
   try {
     await window.Auth.signOut();
     window.Auth.LocalStorage.removeCurrentUser();
-    
+
     AppState.currentUser = null;
     AppState.currentMatches = [];
-    
+
     window.UI.showToast('Logged out successfully', 'success');
     showAuthScreen();
   } catch (error) {
@@ -391,8 +403,16 @@ async function handleSaveProfile() {
     // Save to localStorage
     window.Auth.LocalStorage.setUserProfile(profile);
 
-    window.UI.showStatus('profile-status', 'Profile saved successfully!', 'success');
-    window.UI.showToast('Profile saved!', 'success');
+    // Clear confirmation: "updated" when editing, "created" the first time
+    const wasEditing = AppState.hasProfile;
+    const message = wasEditing ? 'Profile updated ✓' : 'Profile created ✓';
+    window.UI.showStatus('profile-status', message, 'success');
+    window.UI.showToast(message, 'success', 4000);
+    document.getElementById('profile-status')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    AppState.hasProfile = true;
+    setProfileMode(true);
+    syncMatchFormWithProfile(profile);
 
     // Switch to Edit Profile button
     const createProfileBtn = document.getElementById('create-profile-btn');
@@ -400,16 +420,11 @@ async function handleSaveProfile() {
     if (createProfileBtn) window.UI.hide('create-profile-btn');
     if (editProfileBtn) window.UI.show('edit-profile-btn');
 
-    // Show main sections and hide profile section
+    // Return to the main sections once the confirmation has been seen
     setTimeout(() => {
-      window.UI.hide('profile-section');
-      window.UI.show('match-section');
-      window.UI.show('prequiz-section');
-      window.UI.show('session-section');
-      window.UI.show('postquiz-section');
-      window.UI.show('feedback-section');
+      showMainSections();
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1500);
+    }, 2000);
   } catch (error) {
     console.error('Error saving profile:', error);
     window.UI.showStatus('profile-status', 'Error saving profile. Please try again.', 'error');
@@ -448,20 +463,20 @@ async function handleFindMatch() {
     primaryGoal: profile.primaryGoal,
     preferredFrequency: profile.preferredFrequency,
     timeZone: profile.timeZone,
-    // Get optional preferences from matching form
-    partnerPreference: document.getElementById('partnerPreference')?.value || 'No Preference',
-    sessionLength: document.getElementById('sessionLength')?.value || '1 hour',
-    studyPersonality: document.getElementById('studyPersonality')?.value || 'Flexible'
+    // The search form starts from the profile; the user may adjust it per search
+    partnerPreference: document.getElementById('partnerPreference')?.value || profile.partnerPreference,
+    sessionLength: document.getElementById('sessionLength')?.value || profile.sessionLength,
+    studyPersonality: document.getElementById('studyPersonality')?.value || profile.studyPersonality
   };
 
   try {
     // Fetch users from Firebase
     let candidates = [];
-    
+
     if (!window.FirebaseHelpers) {
       throw new Error('Firebase helpers not initialized. Please refresh the page.');
     }
-    
+
     try {
       const profiles = await window.FirebaseHelpers.fetchAllProfiles();
       if (profiles && Array.isArray(profiles)) {
@@ -493,7 +508,7 @@ async function handleFindMatch() {
     if (!window.Matching || !window.Matching.findRematch) {
       throw new Error('Matching algorithm not initialized');
     }
-    
+
     const matches = window.Matching.findRematch(
       targetUser,
       candidates,
@@ -515,44 +530,7 @@ async function handleFindMatch() {
 
     // Display best match with request button
     const bestMatch = matches.matches[0];
-    const qualityBadge = window.Matching.getMatchQualityBadge(bestMatch.score);
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = `
-      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-on-accent); border-radius: var(--radius); margin-bottom: 16px;">
-        <h3 style="margin: 0 0 8px 0; color: var(--text-on-accent);">Best Match Found!</h3>
-        <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-          <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-on-accent);">${bestMatch.score} points</p>
-          <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
-            ${qualityBadge.emoji} ${qualityBadge.text}
-          </span>
-        </div>
-        <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(bestMatch.user.name || bestMatch.user.username)}</strong></p>
-      </div>
-      <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
-        <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-        <ul style="line-height: 1.8; color: #D4F5C8;">
-          ${bestMatch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
-        </ul>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
-          📩 Send Match Request
-        </button>
-        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-on-accent); border: none; border-radius: var(--radius); cursor: pointer;">
-          🔄 Try Another Match
-        </button>
-      </div>
-    `;
-    
-    // Add click handler for send request button
-    document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
-      await sendMatchRequest(bestMatch);
-    });
-    
-    // Add click handler for rematch button
-    document.getElementById('rematch-btn')?.addEventListener('click', () => {
-      showNextMatch();
-    });
+    renderMatchCard(bestMatch, 'Best match found');
 
     // Save match to Firebase
     if (window.FirebaseHelpers) {
@@ -583,7 +561,7 @@ function showNextMatch() {
   }
 
   AppState.currentMatchIndex++;
-  
+
   if (AppState.currentMatchIndex >= AppState.currentMatches.length) {
     // Cycled through all matches
     document.getElementById('result').innerHTML = `
@@ -599,44 +577,47 @@ function showNextMatch() {
   }
 
   const match = AppState.currentMatches[AppState.currentMatchIndex];
-  const qualityBadge = window.Matching.getMatchQualityBadge(match.score);
-  
-  const resultDiv = document.getElementById('result');
-  resultDiv.innerHTML = `
-    <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-on-accent); border-radius: var(--radius); margin-bottom: 16px;">
-      <h3 style="margin: 0 0 8px 0; color: var(--text-on-accent);">Match #${AppState.currentMatchIndex + 1}</h3>
-      <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-        <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-on-accent);">${match.score} points</p>
-        <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
-          ${qualityBadge.emoji} ${qualityBadge.text}
-        </span>
+  renderMatchCard(match, `Match #${AppState.currentMatchIndex + 1}`);
+}
+
+/**
+ * Show one match in the result area with its score, reasons and actions.
+ * Names go through UI.displayNameFor, so another student's email is never shown.
+ * @param {Object} match - {user, score, breakdown} from the matcher
+ * @param {string} heading - e.g. "Best match found" or "Match #2"
+ */
+function renderMatchCard(match, heading) {
+  const esc = window.UI.escapeHtml;
+  const badge = window.Matching.getMatchQualityBadge(match.score);
+  const reasons = match.breakdown?.reasons?.length
+    ? match.breakdown.reasons.map(r => `<li>${esc(r)}</li>`).join('')
+    : '<li>Complementary skills and preferences</li>';
+
+  document.getElementById('result').innerHTML = `
+    <div class="match-card">
+      <div class="match-card-head">
+        <div>
+          <p class="match-card-label">${esc(heading)}</p>
+          <h3 class="match-card-name">${esc(window.UI.displayNameFor(match.user))}</h3>
+        </div>
+        <div class="match-card-score">
+          <span class="match-points">${match.score} pts</span>
+          <span class="match-badge">${badge.emoji} ${esc(badge.text)}</span>
+        </div>
       </div>
-      <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(match.user.name || match.user.username)}</strong></p>
-    </div>
-    <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
-      <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-      <ul style="line-height: 1.8; color: #D4F5C8;">
-        ${match.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
-      </ul>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-      <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
-        📩 Send Match Request
-      </button>
-      <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-on-accent); border: none; border-radius: var(--radius); cursor: pointer;">
-        🔄 Try Another Match
-      </button>
+      <h4 class="match-why-title">Why you match</h4>
+      <ul class="match-why">${reasons}</ul>
+      <div class="match-actions">
+        <button type="button" id="send-match-request-btn">📩 Send Match Request</button>
+        <button type="button" id="rematch-btn" class="btn-secondary">🔄 Try Another Match</button>
+      </div>
     </div>
   `;
-  
-  // Add click handlers
+
   document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
     await sendMatchRequest(match);
   });
-  
-  document.getElementById('rematch-btn')?.addEventListener('click', () => {
-    showNextMatch();
-  });
+  document.getElementById('rematch-btn')?.addEventListener('click', showNextMatch);
 }
 
 /**
@@ -666,7 +647,7 @@ function startSession(peerName) {
   `;
 
   window.UI.showToast('Session started! Opening meeting...', 'success');
-  
+
   // Scroll to session section
   document.getElementById('session-section')?.scrollIntoView({ behavior: 'smooth' });
 }
@@ -684,10 +665,8 @@ function endSession(peerName) {
     `;
   }
 
-  window.UI.showToast('Session ended', 'info');
-  
-  // Scroll to post-quiz section
-  document.getElementById('postquiz-section')?.scrollIntoView({ behavior: 'smooth' });
+  // Unlock the buddy feedback form now that the session is over
+  handleEndSession();
 }
 
 /**
@@ -720,7 +699,7 @@ async function handleStartPreQuiz() {
     // Use UID as the key (same as saveProfile does)
     const userKey = currentUser.uid;
     console.log('🔍 Looking up profile with UID:', userKey);
-    
+
     const userRef = firebase.database().ref(`users/${userKey}`);
     const snapshot = await userRef.once('value');
     let profile = snapshot.val();
@@ -772,28 +751,38 @@ async function handleStartPreQuiz() {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // The backend sends a short, safe explanation (e.g. "The AI is busy...")
+      let message = 'Failed to generate quiz. Please try again.';
+      try {
+        const body = await response.json();
+        if (body && body.error) message = body.error;
+      } catch (e) { /* response was not JSON */ }
+      const serverError = new Error(message);
+      serverError.fromServer = true;
+      throw serverError;
     }
 
     const data = await response.json();
-    
+
     console.log('🎯 Quiz API response:', data);
-    
+
     if (!data.content) {
       throw new Error('No quiz content returned from API');
     }
-    
+
     // Parse and display questions
     displayPreQuizQuestions(data.content);
-    
+
     // Switch views
     window.UI.hide('prequiz-start');
+    window.UI.hide('prequiz-results');
+    window.UI.show('submit-prequiz-btn');
     window.UI.show('prequiz-quiz');
     window.UI.hide('prequiz-status');
-    
+
   } catch (error) {
     console.error('Error generating quiz:', error);
-    statusDiv.textContent = 'Failed to generate quiz. Please try again.';
+    statusDiv.textContent = error.fromServer ? error.message : 'Failed to generate quiz. Please try again.';
     statusDiv.className = 'status error';
   }
 }
@@ -845,46 +834,46 @@ function renderQuizMath(element) {
  */
 function displayPreQuizQuestions(quizContent) {
   const questionsDiv = document.getElementById('prequiz-questions');
-  
+
   console.log('🔍 Quiz content received:', quizContent);
-  
+
   // Parse the quiz content
   const questions = parseQuizContent(quizContent);
-  
+
   console.log('✅ Parsed questions:', questions.length, questions);
-  
+
   if (questions.length === 0) {
     questionsDiv.innerHTML = '<p class="text-danger">Failed to parse quiz questions. Please try again.</p>';
     return;
   }
-  
+
   let html = '<div class="quiz-questions">';
-  
+
   questions.forEach((q, index) => {
     // Clean the text to remove LaTeX and formatting symbols
     const cleanQuestion = cleanGeminiText(q.question);
     const cleanOptions = q.options.map(opt => cleanGeminiText(opt));
-    
+
     html += `
-      <div class="question-block" style="margin-bottom: 24px; padding: 16px; background: rgba(var(--primary-rgb), 0.04); border-radius: var(--radius-sm);">
-        <p style="font-weight: 600; margin-bottom: 12px;">${cleanQuestion}</p>
+      <div class="question-block" id="qblock-${index}">
+        <p class="question-text"><span class="question-number">${index + 1}.</span> ${cleanQuestion}</p>
         ${q.difficulty ? `<span class="quiz-tag">${cleanGeminiText(q.difficulty.replace(/[\[\]]/g, '').toLowerCase())}</span>` : ''}
-        <div class="options" style="margin-left: 12px;">
+        <div class="options">
           ${cleanOptions.map((opt, i) => `
-            <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-              <input type="radio" name="q${index}" value="${String.fromCharCode(65 + i)}" required style="margin-right: 8px;">
-              ${opt}
+            <label class="quiz-option" data-letter="${String.fromCharCode(65 + i)}">
+              <input type="radio" name="q${index}" value="${String.fromCharCode(65 + i)}" required>
+              <span>${opt}</span>
             </label>
           `).join('')}
         </div>
       </div>
     `;
   });
-  
+
   html += '</div>';
   questionsDiv.innerHTML = html;
   renderQuizMath(questionsDiv);
-  
+
   // Store questions for grading
   window.preQuizQuestions = questions;
 }
@@ -894,40 +883,40 @@ function displayPreQuizQuestions(quizContent) {
  */
 function parseQuizContent(content) {
   const questions = [];
-  
+
   console.log('🔍 Starting quiz parsing...');
   console.log('📄 Content length:', content.length);
   console.log('📝 First 500 chars:', content.substring(0, 500));
-  
+
   // Strip any preamble text before the first question
   const firstQuestionIndex = content.search(/Question\s+1\b/i);
   if (firstQuestionIndex > 0) {
     console.log('✂️ Removing preamble text (first', firstQuestionIndex, 'chars)');
     content = content.substring(firstQuestionIndex);
   }
-  
+
   // Primary strategy: Split by "Question N" pattern using multiple approaches
   let blocks = [];
-  
+
   // Try approach 1: Split at the start of each "Question N [...]" line
   // This uses a positive lookahead to split right before each Question marker
   const approach1 = content.split(/(?=\nQuestion\s+\d+)/);
   const blocks1 = approach1
     .map(b => b.trim())
     .filter(b => b && /^Question\s+\d+/i.test(b));
-  
+
   console.log('📦 Approach 1 (split by \\nQuestion): found', blocks1.length, 'blocks');
-  
+
   // Try approach 2: Use regex to match each complete question block
   const questionPattern = /Question\s+\d+[\s\S]*?(?=Question\s+\d+|$)/gi;
   const blocks2 = content.match(questionPattern) || [];
   console.log('📦 Approach 2 (regex match): found', blocks2.length, 'blocks');
-  
+
   // Use whichever approach found more blocks
   blocks = blocks1.length >= blocks2.length ? blocks1 : blocks2.map(b => b.trim());
-  
+
   console.log('✅ Using blocks from best approach:', blocks.length);
-  
+
   if (blocks.length === 0) {
     console.error('❌ No question blocks found in content!');
     return [];
@@ -1031,11 +1020,11 @@ function parseQuizContent(content) {
 
   console.log(`✅ Parsed ${questions.length} questions from quiz content`);
   console.log('📋 Questions array:', questions);
-  
+
   if (questions.length === 0) {
     console.error('❌ No questions parsed! Raw content:', content);
   }
-  
+
   return questions;
 }
 
@@ -1049,28 +1038,40 @@ function handleSubmitPreQuiz() {
     return;
   }
 
+  // Every question must be answered before grading
+  document.querySelectorAll('.question-block.unanswered').forEach(b => b.classList.remove('unanswered'));
+  const unanswered = questions
+    .map((q, index) => index)
+    .filter(index => !document.querySelector(`input[name="q${index}"]:checked`));
+  if (unanswered.length > 0) {
+    unanswered.forEach(index => document.getElementById(`qblock-${index}`)?.classList.add('unanswered'));
+    document.getElementById(`qblock-${unanswered[0]}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.UI.showToast(`Please answer every question first (${unanswered.length} left)`, 'warning', 4000);
+    return;
+  }
+
   let correct = 0;
   let strengthCorrect = 0;
   let weaknessCorrect = 0;
   let strengthTotal = 0;
   let weaknessTotal = 0;
-  
+
   questions.forEach((q, index) => {
     const selected = document.querySelector(`input[name="q${index}"]:checked`);
     const isCorrect = selected && selected.value === q.correctAnswer;
-    
+
     // More flexible difficulty detection
     const isStrength = q.difficulty.toUpperCase().includes('STRENGTH');
     const isWeakness = q.difficulty.toUpperCase().includes('WEAKNESS');
-    
+
     console.log(`Q${index + 1}: ${q.difficulty} - Strength: ${isStrength}, Weakness: ${isWeakness}, Correct: ${isCorrect}`);
-    
+
     if (isCorrect) {
       correct++;
       if (isStrength) strengthCorrect++;
       if (isWeakness) weaknessCorrect++;
     }
-    
+
     if (isStrength) strengthTotal++;
     if (isWeakness) weaknessTotal++;
   });
@@ -1084,14 +1085,14 @@ function handleSubmitPreQuiz() {
   // Display results
   const scoreDiv = document.getElementById('prequiz-score');
   const breakdownDiv = document.getElementById('prequiz-breakdown');
-  
+
   scoreDiv.innerHTML = `
     <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); color: white; border-radius: var(--radius); margin-bottom: 16px;">
       <h2 style="font-size: 48px; margin: 0; color: white;">${percentage}%</h2>
       <p style="margin: 8px 0 0 0; color: white;">Overall Score: ${correct} / ${questions.length}</p>
     </div>
   `;
-  
+
   breakdownDiv.innerHTML = `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
       <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius-sm); text-align: center;">
@@ -1113,11 +1114,11 @@ function handleSubmitPreQuiz() {
   const currentUser = firebase.auth().currentUser;
   if (currentUser) {
     const userKey = currentUser.uid;
-    
+
     // Determine if user is struggling in their strengths/weaknesses
     const strugglingInStrengths = strengthPct < 50;
     const strugglingInWeaknesses = weaknessPct < 50;
-    
+
     const quizData = {
       preQuizScore: percentage,
       preQuizCorrect: correct,
@@ -1128,7 +1129,7 @@ function handleSubmitPreQuiz() {
       preQuizStrugglingInWeaknesses: strugglingInWeaknesses,
       preQuizTimestamp: Date.now()
     };
-    
+
     // Update both users/ and profiles/ paths
     Promise.all([
       firebase.database().ref(`users/${userKey}`).update(quizData),
@@ -1140,10 +1141,56 @@ function handleSubmitPreQuiz() {
     });
   }
 
-  // Show results
-  window.UI.hide('prequiz-quiz');
+  // Show results above the questions, which now show what was right or wrong
+  showAnswerReview(questions);
+  window.UI.hide('submit-prequiz-btn');
   window.UI.show('prequiz-results');
+  document.getElementById('prequiz-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   window.UI.showToast(`Quiz completed! You scored ${percentage}%`, 'success');
+}
+
+/**
+ * After grading, mark each question: the correct option in green, a wrong
+ * choice in red, lock the answers and show the explanation.
+ * @param {Array} questions - Parsed questions with correctAnswer and explanation
+ */
+function showAnswerReview(questions) {
+  questions.forEach((q, index) => {
+    const block = document.getElementById(`qblock-${index}`);
+    if (!block) return;
+    const selected = block.querySelector('input:checked')?.value;
+    const gotIt = selected === q.correctAnswer;
+
+    block.querySelectorAll('.quiz-option').forEach(label => {
+      const letter = label.dataset.letter;
+      label.querySelector('input').disabled = true;
+      if (letter === q.correctAnswer) label.classList.add('opt-correct');
+      else if (letter === selected) label.classList.add('opt-wrong');
+    });
+    block.classList.add(gotIt ? 'answered-right' : 'answered-wrong');
+
+    const note = document.createElement('p');
+    note.className = 'q-explanation';
+    const verdict = gotIt ? '✓ Correct.' : `✗ The answer is ${q.correctAnswer || '?'}.`;
+    note.innerHTML = `<strong>${verdict}</strong> ${q.explanation ? cleanGeminiText(q.explanation) : ''}`;
+    block.appendChild(note);
+    renderQuizMath(note);
+  });
+}
+
+/**
+ * Start the assessment again without reloading the page (matches stay on screen)
+ */
+function resetPreQuiz() {
+  window.preQuizQuestions = [];
+  const questionsDiv = document.getElementById('prequiz-questions');
+  if (questionsDiv) questionsDiv.innerHTML = '';
+  window.UI.hide('prequiz-results');
+  window.UI.hide('prequiz-quiz');
+  window.UI.hide('prequiz-status');
+  window.UI.show('submit-prequiz-btn');
+  window.UI.show('prequiz-start');
+  document.getElementById('prequiz-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -1153,12 +1200,12 @@ function handleSubmitPreQuiz() {
 function displayPreQuizResults(profile) {
   const scoreDiv = document.getElementById('prequiz-score');
   const breakdownDiv = document.getElementById('prequiz-breakdown');
-  
+
   if (!scoreDiv || !breakdownDiv) return;
-  
+
   // Check if quiz data exists in profile
   if (!profile.preQuizScore && profile.preQuizScore !== 0) return;
-  
+
   scoreDiv.innerHTML = `
     <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-on-accent); border-radius: var(--radius); margin-bottom: 16px;">
       <h2 style="font-size: 48px; margin: 0; color: var(--text-on-accent);">${profile.preQuizScore}%</h2>
@@ -1168,7 +1215,7 @@ function displayPreQuizResults(profile) {
       </p>
     </div>
   `;
-  
+
   breakdownDiv.innerHTML = `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
       <div style="padding: 16px; background: rgba(var(--primary-rgb), 0.1); border-radius: var(--radius-sm); text-align: center;">
@@ -1183,7 +1230,7 @@ function displayPreQuizResults(profile) {
       </div>
     </div>
   `;
-  
+
   // Show the results section
   window.UI.hide('prequiz-quiz');
   window.UI.show('prequiz-results');
@@ -1197,7 +1244,7 @@ async function handlePostQuizSubmit(e) {
   e.preventDefault();
 
   // Get all form values
-  const matchRelevance = document.getElementById('match-relevance')?.value;
+  const matchRelevance = document.querySelector('input[name="match-relevance"]:checked')?.value;
   const goalsMatch = document.querySelector('input[name="goals-match"]:checked')?.value;
   const bestThing = document.getElementById('best-thing')?.value;
   const leastFav = document.getElementById('least-fav')?.value;
@@ -1241,22 +1288,10 @@ async function handlePostQuizSubmit(e) {
 
     // Clear form
     window.UI.clearForm('postquiz-form');
-    
-    // Reset slider to default
-    const slider = document.getElementById('match-relevance');
-    if (slider) {
-      slider.value = 3;
-      const display = document.getElementById('relevance-display');
-      if (display) display.textContent = '3';
-      // Update emoji highlighting
-      document.querySelectorAll('.slider-emoji').forEach((emoji, index) => {
-        if (index === 2) {
-          emoji.classList.add('active');
-        } else {
-          emoji.classList.remove('active');
-        }
-      });
-    }
+
+    // Feedback for this session is done; lock the form until the next session
+    try { localStorage.removeItem(FEEDBACK_DUE_KEY); } catch (e) { /* storage unavailable */ }
+    setTimeout(hideFeedbackForm, 2500);
   } catch (error) {
     console.error('Error submitting feedback:', error);
     window.UI.showStatus('feedback-status', 'Failed to submit feedback. Please try again.', 'error');
@@ -1273,7 +1308,7 @@ async function loadUserProfile(username) {
     // Get current user to use UID
     const currentUser = firebase.auth().currentUser;
     let profile = null;
-    
+
     if (currentUser && window.FirebaseHelpers) {
       // Load by UID instead of username
       const userKey = currentUser.uid;
@@ -1286,7 +1321,7 @@ async function loadUserProfile(username) {
     if (!profile) {
       profile = window.Auth.LocalStorage.getUserProfile();
       console.log('🔍 Loaded profile from localStorage:', profile);
-      
+
       // If we have a localStorage profile but not in Firebase, sync it
       if (profile && currentUser) {
         console.log('📤 Syncing localStorage profile to Firebase...');
@@ -1306,6 +1341,9 @@ async function loadUserProfile(username) {
       // User has a profile - show Edit Profile button
       if (createProfileBtn) window.UI.hide('create-profile-btn');
       if (editProfileBtn) window.UI.show('edit-profile-btn');
+      AppState.hasProfile = true;
+      setProfileMode(true);
+      syncMatchFormWithProfile(profile);
 
       // Populate profile form if profile exists (the user's own text, falling back to
       // the stored value for profiles saved before originals were kept)
@@ -1344,7 +1382,7 @@ async function loadUserProfile(username) {
       if (partnerPreferenceEl && profile.partnerPreference) partnerPreferenceEl.value = profile.partnerPreference;
       if (studyPersonalityEl && profile.studyPersonality) studyPersonalityEl.value = profile.studyPersonality;
       if (timezoneEl && profile.timeZone) timezoneEl.value = profile.timeZone;
-      
+
       // Display pre-quiz results if available (check new field names)
       if (profile.preQuizScore || profile.preQuizScore === 0) {
         console.log('📊 Pre-quiz results found in profile');
@@ -1355,7 +1393,9 @@ async function loadUserProfile(username) {
       // New user - show Create Profile button and auto-open profile section
       if (createProfileBtn) window.UI.show('create-profile-btn');
       if (editProfileBtn) window.UI.hide('edit-profile-btn');
-      
+      AppState.hasProfile = false;
+      setProfileMode(false);
+
       // Hide other sections and show profile section prominently
       window.UI.hide('match-section');
       window.UI.hide('prequiz-section');
@@ -1364,6 +1404,9 @@ async function loadUserProfile(username) {
       window.UI.hide('ai-section');
       window.UI.show('profile-section');
     }
+
+    restoreFeedbackState();
+    applyNavHash();
   } catch (error) {
     console.error('Error loading profile:', error);
   }
@@ -1448,7 +1491,7 @@ function showSection(sectionId) {
     'postquiz-section',
     'ai-section'
   ];
-  
+
   sections.forEach(id => {
     if (id === sectionId) {
       window.UI.show(id);
@@ -1471,13 +1514,72 @@ function showSection(sectionId) {
 }
 
 /**
- * Scroll to the matching section
+ * Go to Find Study Buddy. Before a profile exists there is nothing to match
+ * on, so ask the user to create one first instead of doing nothing.
  */
 function scrollToMatching() {
-  const matchSection = document.getElementById('match-section');
-  if (matchSection) {
-    matchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!AppState.hasProfile) {
+    window.UI.showToast('Create your profile first', 'warning', 4000);
+    showSection('profile-section');
+    return;
   }
+  showMainSections();
+  document.getElementById('match-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Show the main working sections (and hide the profile form)
+ */
+function showMainSections() {
+  window.UI.hide('profile-section');
+  ['match-section', 'prequiz-section', 'session-section', 'postquiz-section'].forEach(id => window.UI.show(id));
+}
+
+/**
+ * Title the profile form for creating (first time) or editing (afterwards)
+ * @param {boolean} editing - true when a profile already exists
+ */
+function setProfileMode(editing) {
+  const title = document.getElementById('profile-title');
+  const subtitle = document.getElementById('profile-subtitle');
+  const saveBtn = document.getElementById('save-profile-btn');
+  if (title) title.textContent = editing ? '📋 Edit Your Profile' : '📋 Create Your Learning Profile';
+  if (subtitle) {
+    subtitle.textContent = editing
+      ? 'Update your strengths, weaknesses and study preferences'
+      : 'Tell us about your academic strengths and areas where you need help';
+  }
+  if (saveBtn) saveBtn.textContent = editing ? 'Save Changes' : 'Save Profile';
+}
+
+/**
+ * Start the Find Buddy options from the saved profile, so a search uses the
+ * choices the user picked (e.g. "Collaborative") rather than a default
+ * @param {Object} profile - Saved profile
+ */
+function syncMatchFormWithProfile(profile) {
+  if (!profile) return;
+  const fields = {
+    partnerPreference: profile.partnerPreference,
+    sessionLength: profile.sessionLength,
+    studyPersonality: profile.studyPersonality
+  };
+  Object.entries(fields).forEach(([id, value]) => {
+    const select = document.getElementById(id);
+    if (select && value && [...select.options].some(o => o.value === value)) select.value = value;
+  });
+}
+
+/**
+ * Open the section named in the address (links from the AI Tools page use
+ * index.html#profile and index.html#match), then clear it from the address
+ */
+function applyNavHash() {
+  const hash = window.location.hash;
+  if (hash === '#profile') showSection('profile-section');
+  else if (hash === '#match') scrollToMatching();
+  else return;
+  history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
 /**
@@ -1488,14 +1590,14 @@ async function startNewSearch() {
     // Reset AppState
     AppState.currentMatches = [];
     AppState.currentMatchIndex = 0;
-    
+
     const currentUser = firebase.auth().currentUser;
     if (currentUser && window.FirebaseHelpers) {
       // Clear rejection history
       await window.FirebaseHelpers.clearRejectedMatches(currentUser.uid);
       window.UI.showToast('Search history cleared. Finding new matches...', 'info');
     }
-    
+
     // Call findMatch to search again
     await findMatch();
   } catch (error) {
@@ -1525,12 +1627,12 @@ function toggleNotificationPanel() {
 function updateNotificationUI(request) {
   const notificationList = document.getElementById('notification-list');
   const badge = document.getElementById('notification-badge');
-  
+
   if (request) {
     // Show badge
     window.UI.show('notification-badge');
     badge.textContent = '1';
-    
+
     // Create notification item
     notificationList.innerHTML = `
       <div class="notification-item">
@@ -1543,13 +1645,13 @@ function updateNotificationUI(request) {
         </div>
       </div>
     `;
-    
+
     // Add event listeners
     document.getElementById('notif-accept-btn')?.addEventListener('click', async () => {
       await handleAcceptMatch();
       window.UI.hide('notification-panel');
     });
-    
+
     document.getElementById('notif-decline-btn')?.addEventListener('click', async () => {
       await handleDeclineMatch();
       window.UI.hide('notification-panel');
@@ -1568,18 +1670,18 @@ function listenForMatchRequests(userKey) {
   const requestRef = firebase.database().ref(`matchRequests/${userKey}`);
   requestRef.on('value', (snapshot) => {
     const request = snapshot.val();
-    
+
     // Update notification UI
     updateNotificationUI(request);
-    
+
     if (request) {
       // Show pending request UI in session section
       window.UI.hide('session-info');
       window.UI.hide('session-waiting');
       window.UI.show('session-pending');
-      
+
       document.getElementById('requester-name').textContent = request.fromName || 'Someone';
-      
+
       window.UI.showToast('New match request received!', 'success');
     }
   });
@@ -1604,7 +1706,7 @@ async function sendMatchRequest(match) {
 
     const userKey = currentUser.uid;
     const userName = publicName(currentUser);
-    
+
     // Get partner's UID
     const partnerKey = match.user.uid;
     if (!partnerKey) {
@@ -1626,10 +1728,10 @@ async function sendMatchRequest(match) {
     // Show waiting state
     window.UI.hide('session-info');
     window.UI.show('session-waiting');
-    document.getElementById('match-partner-name').textContent = match.user.name || match.user.username;
-    
+    document.getElementById('match-partner-name').textContent = window.UI.displayNameFor(match.user);
+
     window.UI.showToast('Match request sent! Waiting for response...', 'success');
-    
+
     // Listen for acceptance
     listenForMatchAcceptance(userKey, match);
   } catch (error) {
@@ -1652,7 +1754,7 @@ async function handleRematchRequest(currentMatch) {
 
     const userId = currentUser.uid;
     const rejectedUserId = currentMatch.user.uid || currentMatch.user.username;
-    
+
     // Track rejection in Firebase
     if (window.FirebaseHelpers) {
       const rejected = await window.FirebaseHelpers.rejectMatch(userId, rejectedUserId);
@@ -1666,7 +1768,7 @@ async function handleRematchRequest(currentMatch) {
     // Fetch current user profile
     const userSnapshot = await firebase.database().ref(`users/${userId}`).once('value');
     const currentUserProfile = userSnapshot.val();
-    
+
     if (!currentUserProfile) {
       window.UI.showToast('Could not load your profile', 'error');
       return;
@@ -1676,21 +1778,21 @@ async function handleRematchRequest(currentMatch) {
     let allCandidates = [];
     const profilesSnapshot = await firebase.database().ref('profiles').once('value');
     const profilesData = profilesSnapshot.val();
-    
+
     if (profilesData) {
       allCandidates = Object.entries(profilesData).map(([uid, profile]) => ({
         uid,
         ...profile
       }));
     }
-    
+
     console.log(`Found ${allCandidates.length} total candidates for rematch`);
 
     // Get rejected IDs to exclude
     const rejectedIds = window.FirebaseHelpers 
       ? await window.FirebaseHelpers.getRejectedMatchIds(userId)
       : [rejectedUserId];
-    
+
     console.log(`Excluding ${rejectedIds.length} rejected matches:`, rejectedIds);
 
     // Use findRematch with exclusion list
@@ -1714,7 +1816,7 @@ async function handleRematchRequest(currentMatch) {
           </p>
         </div>
       `;
-      
+
       window.UI.showToast('No more matches available', 'info');
       return;
     }
@@ -1724,45 +1826,7 @@ async function handleRematchRequest(currentMatch) {
     AppState.currentMatches = rematchResult.matches;
     AppState.currentMatchIndex = 0;
 
-    const qualityBadge = window.Matching.getMatchQualityBadge(bestRematch.score);
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = `
-      <div style="padding: 12px 16px; background: rgba(34, 197, 94, 0.1); border-left: 4px solid var(--success); border-radius: 4px; margin-bottom: 16px;">
-        <p style="color: var(--success); margin: 0; font-weight: 600;">✓ Found alternative match!</p>
-      </div>
-      <div class="match-card" style="padding: 20px; background: linear-gradient(135deg, var(--accent-light), var(--accent)); color: var(--text-on-accent); border-radius: var(--radius); margin-bottom: 16px;">
-        <h3 style="margin: 0 0 8px 0; color: var(--text-on-accent);">Next Match</h3>
-        <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
-          <p style="font-size: 32px; font-weight: 700; margin: 0; color: var(--text-on-accent);">${bestRematch.score} points</p>
-          <span style="background: ${qualityBadge.color}; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; color: white;">
-            ${qualityBadge.emoji} ${qualityBadge.text}
-          </span>
-        </div>
-        <p style="margin: 0; color: var(--text-on-accent);"><strong>${window.UI.escapeHtml(bestRematch.user.name || bestRematch.user.username)}</strong></p>
-      </div>
-      <div style="padding: 20px; background: #2D4520; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid #3D5530;">
-        <h4 style="color: #B8E6A0; margin-bottom: 12px; font-weight: 600;">Why you match:</h4>
-        <ul style="line-height: 1.8; color: #D4F5C8;">
-          ${bestRematch.breakdown?.reasons?.map(r => `<li>${r}</li>`).join('') || '<li>Complementary skills and preferences</li>'}
-        </ul>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <button id="send-match-request-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--primary); color: white; border: none; border-radius: var(--radius); cursor: pointer;">
-          📩 Send Match Request
-        </button>
-        <button id="rematch-btn" style="padding: 14px; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--text-on-accent); border: none; border-radius: var(--radius); cursor: pointer;">
-          🔄 Try Another Match
-        </button>
-      </div>
-    `;
-
-    // Attach event listeners to new buttons
-    document.getElementById('send-match-request-btn')?.addEventListener('click', async () => {
-      await sendMatchRequest(bestRematch);
-    });
-    document.getElementById('rematch-btn')?.addEventListener('click', () => {
-      showNextMatch();
-    });
+    renderMatchCard(bestRematch, 'Next match');
 
     window.UI.showToast(`Found next match!`, 'success');
   } catch (error) {
@@ -1789,7 +1853,7 @@ function listenForMatchAcceptance(userKey, match) {
         console.log('Fixing old Google Meet link...');
         const meetingRoomId = generateMeetingId();
         const newMeetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
-        
+
         // Update both users' sessions
         const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
         await Promise.all([
@@ -1798,14 +1862,14 @@ function listenForMatchAcceptance(userKey, match) {
         ]);
         return; // Will trigger again with updated link
       }
-      
+
       // Match was accepted!
       window.UI.hide('session-waiting');
       window.UI.show('session-ready');
-      document.getElementById('session-partner-name').textContent = match.user.name || match.user.username;
-      
+      document.getElementById('session-partner-name').textContent = window.UI.displayNameFor(match.user);
+
       window.UI.showToast('Match accepted! Click to start your meeting.', 'success');
-      
+
       // Stop listening
       sessionRef.off();
     }
@@ -1821,12 +1885,12 @@ async function handleAcceptMatch() {
     if (!currentUser) return;
 
     const userKey = currentUser.uid;
-    
+
     // Get the pending match request
     const requestRef = firebase.database().ref(`matchRequests/${userKey}`);
     const snapshot = await requestRef.once('value');
     const request = snapshot.val();
-    
+
     if (!request) {
       window.UI.showToast('No pending match request', 'error');
       return;
@@ -1835,7 +1899,7 @@ async function handleAcceptMatch() {
     // Generate a unique Jitsi Meet room link
     const meetingRoomId = generateMeetingId();
     const meetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
-    
+
     // Create session data
     const sessionData = {
       user1: request.from,
@@ -1856,11 +1920,11 @@ async function handleAcceptMatch() {
     window.UI.hide('session-pending');
     window.UI.hide('session-info');
     window.UI.show('session-ready');
-    
+
     document.getElementById('session-partner-name').textContent = request.fromName || 'Your study buddy';
-    
+
     window.UI.showToast('Match accepted! Click to start your meeting.', 'success');
-    
+
     // Listen for when partner clicks "Start Meeting"
     listenForMeetingStart(userKey);
   } catch (error) {
@@ -1879,10 +1943,10 @@ async function handleDeclineMatch() {
 
     const userKey = currentUser.uid;
     await firebase.database().ref(`matchRequests/${userKey}`).remove();
-    
+
     window.UI.hide('session-pending');
     window.UI.show('session-info');
-    
+
     window.UI.showToast('Match request declined', 'success');
   } catch (error) {
     console.error('Error declining match:', error);
@@ -1901,7 +1965,7 @@ async function handleStartMeeting() {
     const sessionRef = firebase.database().ref(`sessions/${userKey}`);
     const snapshot = await sessionRef.once('value');
     const session = snapshot.val();
-    
+
     if (!session || !session.meetLink) {
       window.UI.showToast('No active session found', 'error');
       return;
@@ -1912,16 +1976,16 @@ async function handleStartMeeting() {
 
     // Update session to show meeting started
     await sessionRef.update({ meetingStarted: true });
-    
+
     // Show the meeting link
     const linkContainer = document.getElementById('meeting-link-container');
     const linkElement = document.getElementById('meeting-link');
-    
+
     linkElement.href = meetLink;
     linkElement.textContent = meetLink;
-    
+
     window.UI.show('meeting-link-container');
-    
+
     // Notify the other user
     const partnerKey = session.user1 === userKey ? session.user2 : session.user1;
     await firebase.database().ref(`notifications/${partnerKey}`).set({
@@ -1930,19 +1994,14 @@ async function handleStartMeeting() {
       meetLink: meetLink,
       timestamp: Date.now()
     });
-    
+
     window.UI.showToast('Opening video meeting...', 'success');
-    
+
     // Open the meeting in a new tab
     setTimeout(() => {
       window.open(meetLink, '_blank');
-      
-      // Show mandatory feedback modal after meeting starts
-      setTimeout(() => {
-        showMandatoryFeedbackModal();
-      }, 1000);
     }, 500);
-    
+
   } catch (error) {
     console.error('Error starting meeting:', error);
     window.UI.showToast('Failed to start meeting', 'error');
@@ -1969,16 +2028,16 @@ function listenForMeetingStart(userKey) {
     if (notif && notif.type === 'meeting-ready') {
       // Show notification
       window.UI.showToast('Your partner started the meeting!', 'success');
-      
+
       // Show the meeting link
       const linkContainer = document.getElementById('meeting-link-container');
       const linkElement = document.getElementById('meeting-link');
-      
+
       linkElement.href = notif.meetLink;
       linkElement.textContent = notif.meetLink;
-      
+
       window.UI.show('meeting-link-container');
-      
+
       // Clear the notification
       notifRef.remove();
     }
@@ -1986,148 +2045,41 @@ function listenForMeetingStart(userKey) {
 }
 
 /**
- * Initialize rating slider with emoji feedback
+ * Open the buddy feedback form (after a session has ended)
  */
-function initRatingSlider() {
-  const slider = document.getElementById('match-relevance');
-  const display = document.getElementById('relevance-display');
-  const emojis = document.querySelectorAll('.slider-emoji');
-  
-  if (!slider || !display) return;
-  
-  function updateSlider(value) {
-    display.textContent = value;
-    
-    // Update emoji highlighting
-    emojis.forEach((emoji, index) => {
-      const emojiValue = index + 1;
-      if (emojiValue === parseInt(value)) {
-        emoji.classList.add('active');
-      } else {
-        emoji.classList.remove('active');
-      }
-    });
-  }
-  
-  // Initialize on page load
-  updateSlider(slider.value);
-  
-  // Update on slider change (both 'input' and 'change' for live updates)
-  slider.addEventListener('input', (e) => {
-    updateSlider(e.target.value);
-  });
-  
-  slider.addEventListener('change', (e) => {
-    updateSlider(e.target.value);
-  });
-  
-  // Allow clicking emojis to set value
-  emojis.forEach((emoji) => {
-    emoji.addEventListener('click', () => {
-      const value = emoji.getAttribute('data-value');
-      slider.value = value;
-      updateSlider(value);
-    });
-  });
+function showFeedbackForm() {
+  window.UI.hide('feedback-locked');
+  window.UI.show('feedback-subsection');
 }
 
 /**
- * Show mandatory feedback modal
+ * Lock the feedback form again until the next session ends
  */
-function showMandatoryFeedbackModal() {
-  const modal = document.getElementById('mandatory-feedback-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-  }
+function hideFeedbackForm() {
+  window.UI.hide('feedback-subsection');
+  window.UI.show('feedback-locked');
+  window.UI.clearStatus('feedback-status');
 }
 
 /**
- * Hide mandatory feedback modal
+ * The user finished a study session: remember that feedback is due (this
+ * survives a page reload) and open the feedback form.
  */
-function hideMandatoryFeedbackModal() {
-  const modal = document.getElementById('mandatory-feedback-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-    document.body.style.overflow = ''; // Restore scrolling
-  }
+function handleEndSession() {
+  try { localStorage.setItem(FEEDBACK_DUE_KEY, '1'); } catch (e) { /* storage unavailable */ }
+  showFeedbackForm();
+  window.UI.showToast('Session finished. Please rate your study buddy.', 'success', 4000);
+  document.getElementById('feedback-subsection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
- * Handle mandatory feedback form submission
+ * On load, reopen the feedback form if a session ended but was not rated yet
  */
-async function handleMandatoryFeedbackSubmit(e) {
-  e.preventDefault();
-
-  const matchRelevance = document.getElementById('modal-match-relevance')?.value;
-  const goalsMatch = document.querySelector('input[name="goals-match"]:checked')?.value;
-  const bestThing = document.getElementById('modal-best-thing')?.value;
-  const improvement = document.getElementById('modal-improvement')?.value;
-
-  if (!matchRelevance || !goalsMatch || !bestThing || !improvement) {
-    window.UI.showToast('Please complete all required fields', 'error');
-    return;
-  }
-
-  const currentUser = firebase.auth().currentUser;
-  if (!currentUser) {
-    window.UI.showToast('Please log in to submit feedback', 'error');
-    return;
-  }
-
-  const feedbackData = {
-    userId: currentUser.uid,
-    userEmail: currentUser.email,
-    matchRelevance: parseInt(matchRelevance),
-    goalsMatch: goalsMatch,
-    bestThing: bestThing,
-    improvementSuggestion: improvement,
-    feedbackType: 'mandatory',
-    timestamp: Date.now(),
-    submittedAt: new Date().toISOString()
-  };
-
-  try {
-    const feedbackRef = firebase.database().ref('feedback').push();
-    await feedbackRef.set(feedbackData);
-
-    // Also mark user as having submitted feedback
-    await firebase.database().ref(`users/${currentUser.uid}/feedbackSubmitted`).set(true);
-
-    document.getElementById('modal-feedback-status').textContent = 'Thank you for your feedback! 🎉';
-    document.getElementById('modal-feedback-status').className = 'status success';
-    document.getElementById('modal-feedback-status').classList.remove('hidden');
-
-    window.UI.showToast('Feedback submitted! You can now continue.', 'success');
-
-    setTimeout(() => {
-      hideMandatoryFeedbackModal();
-      // Clear the form
-      document.getElementById('mandatory-feedback-form').reset();
-      document.getElementById('modal-feedback-status').classList.add('hidden');
-    }, 1500);
-  } catch (error) {
-    console.error('Error submitting feedback:', error);
-    document.getElementById('modal-feedback-status').textContent = 'Failed to submit. Please try again.';
-    document.getElementById('modal-feedback-status').className = 'status error';
-    document.getElementById('modal-feedback-status').classList.remove('hidden');
-  }
+function restoreFeedbackState() {
+  let due = false;
+  try { due = localStorage.getItem(FEEDBACK_DUE_KEY) === '1'; } catch (e) { /* storage unavailable */ }
+  if (due) showFeedbackForm(); else hideFeedbackForm();
 }
-
-// Initialize slider when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initRatingSlider);
-} else {
-  initRatingSlider();
-}
-
-// Set up mandatory feedback form listener
-document.addEventListener('DOMContentLoaded', () => {
-  const mandatoryForm = document.getElementById('mandatory-feedback-form');
-  if (mandatoryForm) {
-    mandatoryForm.addEventListener('submit', handleMandatoryFeedbackSubmit);
-  }
-});
 
 /**
  * Fix old Google Meet sessions by replacing with Jitsi links
@@ -2138,29 +2090,29 @@ async function fixOldGoogleMeetSessions(userKey) {
     const sessionRef = firebase.database().ref(`sessions/${userKey}`);
     const snapshot = await sessionRef.once('value');
     const session = snapshot.val();
-    
+
     if (session && session.meetLink && session.meetLink.includes('meet.google.com')) {
       console.log('🔧 Old Google Meet session detected...');
-      
+
       // Use user1 as the one who fixes the link (to avoid race condition)
       if (session.user1 !== userKey) {
         console.log('⏳ Waiting for partner to fix the link...');
         return; // Let user1 handle the fix
       }
-      
+
       console.log('🔧 Generating new Jitsi link...');
-      
+
       // Generate new Jitsi link using session timestamp for consistency
       const meetingRoomId = `${session.createdAt}-${Math.random().toString(36).substring(2, 8)}`;
       const newMeetLink = `https://meet.jit.si/PeerFuse-${meetingRoomId}`;
-      
+
       // Update both users' sessions
       const partnerKey = session.user2;
       await Promise.all([
         sessionRef.update({ meetLink: newMeetLink }),
         firebase.database().ref(`sessions/${partnerKey}`).update({ meetLink: newMeetLink })
       ]);
-      
+
       console.log('✅ Session updated with Jitsi link:', newMeetLink);
     }
   } catch (error) {

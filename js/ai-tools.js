@@ -268,11 +268,53 @@ function downloadPDF() {
 }
 
 /**
- * Convert Markdown to HTML
+ * Convert the AI's Markdown answer to safe HTML.
+ * Maths ($...$, $$...$$, \(...\), \[...\]) is set aside first so Markdown never
+ * mangles it, marked renders the rest (tables, quotes, lists, rules), DOMPurify
+ * removes anything unsafe, then the maths is put back for KaTeX to typeset.
+ * Falls back to the simple converter if the libraries did not load.
+ * @param {string} markdown - Markdown text from the AI
+ * @returns {string} Sanitised HTML string
+ */
+function markdownToHTML(markdown) {
+  if (!window.marked || !window.DOMPurify) {
+    // Fallback: still never let AI text add tags or scripts to the page
+    return window.DOMPurify
+      ? window.DOMPurify.sanitize(basicMarkdownToHTML(markdown))
+      : basicMarkdownToHTML(escapeText(markdown));
+  }
+  const maths = [];
+  const keepMath = (m) => { maths.push(m); return `MATHBLOCK${maths.length - 1}END`; };
+  const escapeMath = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Placeholders are letters and digits only, so Markdown leaves them alone
+  const text = String(markdown || '')
+    .replace(/\$\$[\s\S]+?\$\$/g, keepMath)
+    .replace(/\\\[[\s\S]+?\\\]/g, keepMath)
+    .replace(/\\\([\s\S]+?\\\)/g, keepMath)
+    .replace(/\$[^$\n]+?\$/g, keepMath);
+
+  const html = window.DOMPurify.sanitize(window.marked.parse(text, { gfm: true, breaks: true }));
+  return html.replace(/MATHBLOCK(\d+)END/g, (_, i) => escapeMath(maths[Number(i)]));
+}
+
+/**
+ * Escape text for safe insertion into HTML
+ * @param {string} text - Plain text
+ * @returns {string} HTML-safe text
+ */
+function escapeText(text) {
+  const div = document.createElement('div');
+  div.textContent = String(text ?? '');
+  return div.innerHTML;
+}
+
+/**
+ * Simple Markdown to HTML converter, used only if marked/DOMPurify fail to load
  * @param {string} markdown - Markdown text
  * @returns {string} HTML string
  */
-function markdownToHTML(markdown) {
+function basicMarkdownToHTML(markdown) {
   let html = markdown;
   
   // Protect math expressions by temporarily replacing them
@@ -412,9 +454,13 @@ async function generateContent(type) {
   modal.style.display = 'flex';
   modal.style.transform = 'translateX(0)';
 
+  // Only offer "Download PDF" once there is real content to download
+  const pdfBtn = document.getElementById('download-pdf-btn');
+  if (pdfBtn) pdfBtn.style.display = 'none';
+
   try {
     console.log(`Fetching ${type} for topic: ${topic}`);
-    
+
     const response = await fetch(`${BACKEND_URL}/generate-${type}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -422,7 +468,15 @@ async function generateContent(type) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // The backend sends a short, safe explanation (e.g. "The AI is busy...")
+      let message = `The server returned an error (${response.status}). Please try again.`;
+      try {
+        const body = await response.json();
+        if (body && body.error) message = body.error;
+      } catch (e) { /* response was not JSON */ }
+      const serverError = new Error(message);
+      serverError.fromServer = true;
+      throw serverError;
     }
 
     const data = await response.json();
@@ -432,14 +486,23 @@ async function generateContent(type) {
     const htmlContent = markdownToHTML(data.content);
     modalTitle.textContent = `${displayType} - ${topic}`;
     modalBody.innerHTML = htmlContent;
-    
+    if (pdfBtn) pdfBtn.style.display = '';
+
     // Render math formulas after DOM update
     setTimeout(() => renderMath(modalBody), 100);
   } catch (error) {
     console.error(`Error generating ${type}:`, error);
-    
-    // Check if it's a connection error
-    if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+
+    if (error.fromServer) {
+      modalTitle.textContent = `Couldn't generate ${type}`;
+      modalBody.innerHTML = `
+        <div class="ai-error">
+          <p class="error">${escapeText(error.message)}</p>
+          <button type="button" onclick="generateContent('${type}')">Try again</button>
+        </div>
+      `;
+    } else if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+      // Connection error: the backend could not be reached at all
       modalTitle.textContent = 'Connection Error';
       modalBody.innerHTML = `
         <div style="padding: 20px; text-align: center;">
@@ -452,15 +515,17 @@ async function generateContent(type) {
       `;
     } else {
       modalTitle.textContent = 'Error';
-      modalBody.innerHTML = `<p class="error">Failed to generate ${type}: ${error.message}</p>`;
+      modalBody.innerHTML = `<p class="error">Failed to generate ${type}: ${escapeText(error.message)}</p>`;
     }
   }
 }
 
+// Guards against attaching the AI tool listeners twice
+let listenersInitialized = false;
+
 /**
  * Set up event listeners for AI tools
  */
-let listenersInitialized = false;
 function setupAIEventListeners() {
   // Prevent duplicate event listeners
   if (listenersInitialized) {
